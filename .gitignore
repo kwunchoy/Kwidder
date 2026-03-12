@@ -1,0 +1,11 @@
+target/
+dist/
+coverage/
+.env
+.idea/
+.vscode/
+*.class
+*.jar
+*.war
+*.ear
+*.log

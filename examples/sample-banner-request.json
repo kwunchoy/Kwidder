@@ -1,0 +1,38 @@
+{
+  "id": "auction-001",
+  "at": 1,
+  "tmax": 120,
+  "cur": ["USD"],
+  "imp": [
+    {
+      "id": "imp-1",
+      "tagid": "homepage-top",
+      "bidfloor": 1.1,
+      "bidfloorcur": "USD",
+      "banner": {
+        "format": [
+          { "w": 300, "h": 250 },
+          { "w": 320, "h": 50 }
+        ],
+        "pos": 1,
+        "topframe": 1
+      }
+    }
+  ],
+  "site": {
+    "id": "site-123",
+    "name": "Example Publisher",
+    "domain": "publisher.example",
+    "page": "https://publisher.example/article/kwidder-launch"
+  },
+  "device": {
+    "ua": "Mozilla/5.0",
+    "ip": "203.0.113.10",
+    "devicetype": 2,
+    "language": "en"
+  },
+  "user": {
+    "id": "user-123"
+  }
+}
+
