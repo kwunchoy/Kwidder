@@ -1,0 +1,133 @@
+{
+  "id": "req-9f4b2c31-7f7b-4c2d-bf66-9f5bfe12a901",
+  "at": 1,
+  "tmax": 120,
+  "cur": ["USD"],
+  "wseat": ["kwidder"],
+  "bcat": ["IAB25-3"],
+  "badv": ["competitor.example"],
+  "source": {
+    "fd": 1,
+    "tid": "9d7e6f54-2c7c-4e13-a1fd-f7e8a10ed201",
+    "pchain": "07bcf65f187117b4:1234",
+    "ext": {
+      "schain": {
+        "ver": "1.0",
+        "complete": 1,
+        "nodes": [
+          {
+            "asi": "ssp.example",
+            "sid": "pub-001",
+            "hp": 1
+          }
+        ]
+      }
+    }
+  },
+  "imp": [
+    {
+      "id": "imp-banner-1",
+      "tagid": "top-leaderboard",
+      "instl": 0,
+      "bidfloor": 1.42,
+      "bidfloorcur": "USD",
+      "secure": 1,
+      "banner": {
+        "format": [
+          { "w": 300, "h": 250 },
+          { "w": 336, "h": 280 }
+        ],
+        "pos": 1,
+        "topframe": 1,
+        "api": [3, 5]
+      },
+      "pmp": {
+        "private_auction": 0,
+        "deals": [
+          {
+            "id": "deal-2026-guaranteed-001",
+            "bidfloor": 1.35,
+            "bidfloorcur": "USD",
+            "at": 1,
+            "wseat": ["kwidder"],
+            "wadomain": ["ads.kwidder.dev"]
+          }
+        ]
+      },
+      "ext": {
+        "gpid": "/1234567/sports/homepage/top"
+      }
+    }
+  ],
+  "site": {
+    "id": "site-789",
+    "name": "Daily Sports Wire",
+    "domain": "sportswire.example",
+    "page": "https://sportswire.example/nba/playoffs-preview",
+    "cat": ["IAB17"],
+    "publisher": {
+      "id": "pub-001",
+      "name": "Daily Sports Media",
+      "domain": "sportswire.example"
+    },
+    "content": {
+      "id": "article-451",
+      "title": "Playoffs Preview",
+      "series": "NBA Analysis",
+      "url": "https://sportswire.example/nba/playoffs-preview",
+      "language": "en"
+    }
+  },
+  "device": {
+    "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Mobile/15E148 Safari/604.1",
+    "ip": "203.0.113.10",
+    "devicetype": 4,
+    "make": "Apple",
+    "model": "iPhone",
+    "os": "iOS",
+    "osv": "18.3",
+    "language": "en",
+    "ifa": "AEBE52E7-03EE-455A-B3C4-E57283966239",
+    "geo": {
+      "country": "USA",
+      "region": "NY",
+      "city": "New York",
+      "zip": "10001",
+      "utcoffset": -300
+    },
+    "ext": {
+      "atts": 0
+    }
+  },
+  "user": {
+    "id": "user-456",
+    "buyeruid": "buyer-kwidder-789",
+    "consent": "CPXxRfAPXxRfAAHABBENB-CgAAAAAAAAAAYgAAAAAAAA",
+    "eids": [
+      {
+        "source": "adserver.org",
+        "uids": [
+          {
+            "id": "8f1c9b5d-2c4a-4ef3-a10d-7c5d44f8ab12",
+            "atype": 1
+          }
+        ]
+      }
+    ],
+    "ext": {
+      "data_providers": ["example-id-graph"]
+    }
+  },
+  "regs": {
+    "coppa": 0,
+    "gpp": "DBABMA~CPXxRfAPXxRfAAHABBENB-CgAAAAAAAAAAYgAAAAAAAA",
+    "gpp_sid": [7, 9],
+    "ext": {
+      "gdpr": 0,
+      "us_privacy": "1---"
+    }
+  },
+  "ext": {
+    "auction_env": "mobile_web"
+  }
+}

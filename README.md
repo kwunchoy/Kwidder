@@ -60,6 +60,11 @@ curl -i \
 
 If the request is bid-eligible, you will get a JSON OpenRTB bid response. Otherwise the service returns `204 No Content`.
 
+For a more exchange-like example with `source`, `regs`, `user.eids`, device geo, and a PMP deal, see:
+
+- `examples/realistic-banner-request.json`
+- `examples/realistic-banner-response.json`
+
 ## Repo workflow
 
 Once your GitHub repo exists, link it with:

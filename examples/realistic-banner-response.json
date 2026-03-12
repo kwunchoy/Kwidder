@@ -1,0 +1,26 @@
+{
+  "id": "req-9f4b2c31-7f7b-4c2d-bf66-9f5bfe12a901",
+  "seatbid": [
+    {
+      "bid": [
+        {
+          "id": "bid-000001",
+          "impid": "imp-banner-1",
+          "price": 1.47,
+          "adomain": ["ads.kwidder.dev"],
+          "cid": "kwidder-campaign-001",
+          "crid": "kwidder-banner-001",
+          "adid": "kwidder-banner-001",
+          "w": 300,
+          "h": 250,
+          "adm": "<a href=\"https://ads.kwidder.dev/click?req=req-9f4b2c31-7f7b-4c2d-bf66-9f5bfe12a901&imp=imp-banner-1\" target=\"_blank\" rel=\"noopener noreferrer\"><div style=\"width:300px;height:250px;background:#0b132b;color:#fdfdfd;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;\">Kwidder</div></a>",
+          "mtype": 1,
+          "dealid": "deal-2026-guaranteed-001"
+        }
+      ],
+      "seat": "kwidder"
+    }
+  ],
+  "bidid": "resp-000002",
+  "cur": "USD"
+}
