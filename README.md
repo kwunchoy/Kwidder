@@ -1,5 +1,7 @@
 # Kwidder
 
+Kwun's Bidder
+
 Kwidder is a starter Java demand-side platform bidder focused on ingesting OpenRTB 2.6 bid requests and making deterministic bid or no-bid decisions. The scaffold is intentionally lean: a plain Java 21 HTTP service, Jackson-based request parsing, a pluggable bid engine, and tests that pin the current auction behavior.
 
 ## What this scaffold does
