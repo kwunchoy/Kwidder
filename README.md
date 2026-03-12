@@ -65,6 +65,12 @@ For a more exchange-like example with `source`, `regs`, `user.eids`, device geo,
 - `examples/realistic-banner-request.json`
 - `examples/realistic-banner-response.json`
 
+For realistic video / CTV examples, see:
+
+- `examples/realistic-video-request.json`
+- `examples/realistic-video-current-response.http` for the current banner-only engine behavior
+- `examples/realistic-video-target-bid-response.json` as a reference shape for future video support
+
 ## Repo workflow
 
 Once your GitHub repo exists, link it with:

@@ -1,0 +1,154 @@
+{
+  "id": "req-video-4dd9ef17-d3e8-4c93-8d75-0c9cb41d9301",
+  "at": 1,
+  "tmax": 250,
+  "cur": ["USD"],
+  "wseat": ["kwidder"],
+  "source": {
+    "fd": 1,
+    "tid": "4f819587-e4e8-4c08-93fb-2f4e5c48a812",
+    "pchain": "4a4d9b8f7c6d5e10:9988",
+    "ext": {
+      "schain": {
+        "ver": "1.0",
+        "complete": 1,
+        "nodes": [
+          {
+            "asi": "ssp.ctv-example.com",
+            "sid": "publisher-ctv-77",
+            "hp": 1
+          }
+        ]
+      }
+    }
+  },
+  "imp": [
+    {
+      "id": "imp-video-1",
+      "tagid": "preroll-main-break",
+      "instl": 0,
+      "bidfloor": 18.5,
+      "bidfloorcur": "USD",
+      "secure": 1,
+      "video": {
+        "mimes": ["video/mp4", "application/javascript"],
+        "minduration": 15,
+        "maxduration": 30,
+        "protocols": [2, 3, 5, 6, 7, 8],
+        "w": 1920,
+        "h": 1080,
+        "placement": 1,
+        "plcmt": 1,
+        "rqddurs": [15, 30],
+        "podid": "pod-2026-01",
+        "podseq": 1,
+        "mincpmpersec": 0.65,
+        "delivery": [2],
+        "playbackmethod": [1, 3],
+        "api": [2, 7],
+        "skip": 1,
+        "skipafter": 5,
+        "durfloors": [
+          {
+            "mindur": 15,
+            "maxdur": 15,
+            "bidfloor": 17.0
+          },
+          {
+            "mindur": 30,
+            "maxdur": 30,
+            "bidfloor": 19.25
+          }
+        ],
+        "ext": {
+          "rewarded": 0,
+          "vpaid": 0
+        }
+      },
+      "pmp": {
+        "private_auction": 0,
+        "deals": [
+          {
+            "id": "deal-ctv-premium-001",
+            "bidfloor": 18.0,
+            "bidfloorcur": "USD",
+            "at": 1,
+            "wseat": ["kwidder"],
+            "wadomain": ["ads.kwidder.dev"]
+          }
+        ]
+      },
+      "ext": {
+        "gpid": "/9876543/ctv/live/sports/preroll"
+      }
+    }
+  ],
+  "app": {
+    "id": "app-ctv-100",
+    "name": "StreamArena",
+    "bundle": "com.streamarena.tv",
+    "storeurl": "https://apps.example.com/streamarena",
+    "cat": ["IAB1-2", "IAB17"],
+    "publisher": {
+      "id": "publisher-ctv-77",
+      "name": "StreamArena Media",
+      "domain": "streamarena.example"
+    },
+    "content": {
+      "id": "content-live-nba-20260312",
+      "title": "Live Basketball Tonight",
+      "series": "Prime Sports Live",
+      "url": "https://streamarena.example/live/basketball-tonight",
+      "language": "en"
+    }
+  },
+  "device": {
+    "ua": "Mozilla/5.0 (Linux; Android 12; SHIELD Android TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "ip": "198.51.100.44",
+    "devicetype": 3,
+    "make": "NVIDIA",
+    "model": "SHIELD Android TV",
+    "os": "Android TV",
+    "osv": "12",
+    "language": "en",
+    "ifa": "7f2f4f10-9a22-4bff-b65b-95b1af4a7712",
+    "geo": {
+      "country": "USA",
+      "region": "CA",
+      "city": "Los Angeles",
+      "zip": "90001",
+      "utcoffset": -480
+    },
+    "ext": {
+      "ifa_type": "aaid"
+    }
+  },
+  "user": {
+    "id": "viewer-8842",
+    "buyeruid": "kwidder-viewer-8821",
+    "consent": "CPXxRfAPXxRfAAHABBENB-CgAAAAAAAAAAYgAAAAAAAA",
+    "eids": [
+      {
+        "source": "uidapi.com",
+        "uids": [
+          {
+            "id": "uid2-3b4f8f9f2b044f95acaf3d9942cbce33",
+            "atype": 3
+          }
+        ]
+      }
+    ]
+  },
+  "regs": {
+    "coppa": 0,
+    "gpp": "DBABMA~CPXxRfAPXxRfAAHABBENB-CgAAAAAAAAAAYgAAAAAAAA",
+    "gpp_sid": [7, 9],
+    "ext": {
+      "gdpr": 0,
+      "us_privacy": "1YNN"
+    }
+  },
+  "ext": {
+    "inventory_partner": "premium-ctv-exchange"
+  }
+}
