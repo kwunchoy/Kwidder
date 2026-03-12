@@ -22,6 +22,16 @@ public final class HttpResponses {
     }
   }
 
+  public static void writeHtml(HttpExchange exchange, int status, String body) throws IOException {
+    byte[] payload = body.getBytes(StandardCharsets.UTF_8);
+    exchange.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
+    exchange.getResponseHeaders().set("x-openrtb-version", "2.6");
+    exchange.sendResponseHeaders(status, payload.length);
+    try (OutputStream outputStream = exchange.getResponseBody()) {
+      outputStream.write(payload);
+    }
+  }
+
   public static void writeStatus(HttpExchange exchange, int status) throws IOException {
     exchange.getResponseHeaders().set("x-openrtb-version", "2.6");
     exchange.sendResponseHeaders(status, -1);

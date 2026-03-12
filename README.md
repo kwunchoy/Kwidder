@@ -12,6 +12,7 @@ Kwidder is a starter Java demand-side platform bidder focused on ingesting OpenR
 - Returns either a valid OpenRTB bid response or HTTP `204 No Content` for a no-bid
 - Returns HTTP `400` with no body for malformed bid requests
 - Emits the `x-openrtb-version: 2.6` response header
+- Exposes a browser UI on `/ui` for manual request testing
 - Exposes `GET /healthz` for liveness checks
 
 ## Project layout
@@ -48,6 +49,8 @@ mvn exec:java
 ```
 
 The service reads configuration from environment variables. A starter `.env.example` is included.
+
+Then open `http://localhost:8080/ui` to paste a bid request and inspect Kwidder's response in the browser.
 
 ## Example request
 
