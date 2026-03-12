@@ -27,7 +27,7 @@ class AuctionHandlerTest {
 
   @Test
   void returnsBadRequestForMalformedJson() throws Exception {
-    startServer(new AppConfig(0, "kwidder", "USD", 1.25d, 4.50d, "ads.kwidder.dev", "creative-1", "campaign-1"));
+    startServer(config(4.50d, 30.00d));
 
     HttpResponse<String> response = post("{");
 
@@ -37,7 +37,7 @@ class AuctionHandlerTest {
 
   @Test
   void returnsNoContentForNoBid() throws Exception {
-    startServer(new AppConfig(0, "kwidder", "USD", 1.25d, 0.50d, "ads.kwidder.dev", "creative-1", "campaign-1"));
+    startServer(config(0.50d, 30.00d));
 
     HttpResponse<String> response = post("""
         {"id":"req-1","imp":[{"id":"imp-1","bidfloor":1.0,"banner":{"w":300,"h":250}}]}
@@ -45,6 +45,21 @@ class AuctionHandlerTest {
 
     assertEquals(204, response.statusCode());
     assertEquals("2.6", response.headers().firstValue("x-openrtb-version").orElseThrow());
+  }
+
+  @Test
+  void returnsVideoBidForEligibleRequest() throws Exception {
+    startServer(config(4.50d, 30.00d));
+
+    HttpResponse<String> response = post("""
+        {"id":"req-video-1","imp":[{"id":"imp-video-1","bidfloor":18.5,"bidfloorcur":"USD","video":{"mimes":["video/mp4"],"minduration":15,"maxduration":30,"w":1920,"h":1080,"rqddurs":[15,30]},"pmp":{"private_auction":0,"deals":[{"id":"deal-1","bidfloor":18.0,"bidfloorcur":"USD","wseat":["kwidder"],"wadomain":["ads.kwidder.dev"]}]}}]}
+        """);
+
+    assertEquals(200, response.statusCode());
+    assertEquals("2.6", response.headers().firstValue("x-openrtb-version").orElseThrow());
+    assertEquals(true, response.body().contains("\"mtype\":2"));
+    assertEquals(true, response.body().contains("\"dealid\":\"deal-1\""));
+    assertEquals(true, response.body().contains("VAST version"));
   }
 
   private void startServer(AppConfig config) throws IOException {
@@ -62,5 +77,24 @@ class AuctionHandlerTest {
         .POST(HttpRequest.BodyPublishers.ofString(body))
         .build();
     return client.send(request, HttpResponse.BodyHandlers.ofString());
+  }
+
+  private AppConfig config(double bannerMaxBidCpm, double videoMaxBidCpm) {
+    return new AppConfig(
+        0,
+        "kwidder",
+        "USD",
+        1.25d,
+        bannerMaxBidCpm,
+        18.75d,
+        videoMaxBidCpm,
+        "ads.kwidder.dev",
+        "creative-1",
+        "campaign-1",
+        "video-creative-1",
+        "video-campaign-1",
+        "https://cdn.kwidder.dev/video/test-15s.mp4",
+        15
+    );
   }
 }

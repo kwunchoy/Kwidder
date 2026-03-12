@@ -8,7 +8,7 @@ Kwidder is a starter Java demand-side platform bidder focused on ingesting OpenR
 
 - Accepts `POST` bid requests on `/openrtb2/auction`
 - Parses core OpenRTB 2.6 request objects with room for exchange-specific `ext` fields
-- Applies a simple default policy for banner impressions
+- Applies a simple default policy for banner and video impressions
 - Returns either a valid OpenRTB bid response or HTTP `204 No Content` for a no-bid
 - Returns HTTP `400` with no body for malformed bid requests
 - Emits the `x-openrtb-version: 2.6` response header
@@ -30,11 +30,11 @@ examples/                                                  Sample OpenRTB reques
 
 The first implementation is intentionally conservative so we have something predictable to iterate on:
 
-- Only banner impressions are bid today
+- Banner and video impressions are supported today
 - Requests with no impressions are rejected as invalid
-- Banner impressions above the configured max CPM are skipped
+- Banner and video inventory use separate bid ceilings
 - If the publisher blocks our advertiser domain via `badv`, we do not bid
-- The bid price is derived from the configured base CPM and the request floor
+- The bid price is derived from the configured media-type base CPM and the request floor
 
 This gives us a safe place to add richer decisioning later such as user targeting, deal logic, pacing, creative selection, category filtering, frequency caps, and campaign budget controls.
 
@@ -68,8 +68,7 @@ For a more exchange-like example with `source`, `regs`, `user.eids`, device geo,
 For realistic video / CTV examples, see:
 
 - `examples/realistic-video-request.json`
-- `examples/realistic-video-current-response.http` for the current banner-only engine behavior
-- `examples/realistic-video-target-bid-response.json` as a reference shape for future video support
+- `examples/realistic-video-response.json`
 
 ## Repo workflow
 
