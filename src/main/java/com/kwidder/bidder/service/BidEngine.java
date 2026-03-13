@@ -1,6 +1,8 @@
 package com.kwidder.bidder.service;
 
 import com.kwidder.bidder.config.AppConfig;
+import com.kwidder.bidder.lineitem.LineItemStore;
+import com.kwidder.bidder.lineitem.MediaType;
 import com.kwidder.bidder.model.openrtb.BidRequest;
 import com.kwidder.bidder.model.openrtb.BidResponse;
 import java.util.ArrayList;
@@ -11,10 +13,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public final class BidEngine {
   private final AppConfig config;
+  private final LineItemStore lineItemStore;
   private final AtomicLong sequence = new AtomicLong();
 
-  public BidEngine(AppConfig config) {
+  public BidEngine(AppConfig config, LineItemStore lineItemStore) {
     this.config = config;
+    this.lineItemStore = lineItemStore;
   }
 
   public BidResponse evaluate(BidRequest request) {
@@ -72,6 +76,10 @@ public final class BidEngine {
   }
 
   private BidResponse.Bid evaluateBannerImp(BidRequest request, BidRequest.Imp imp, EligibleDeal eligibleDeal) {
+    if (!lineItemStore.hasActiveLineItem(MediaType.BANNER)) {
+      return null;
+    }
+
     BannerSize size = bannerSize(imp.banner());
     double floor = effectiveFloor(imp, eligibleDeal, null);
     if (floor > config.bannerMaxBidCpm()) {
@@ -97,6 +105,10 @@ public final class BidEngine {
   }
 
   private BidResponse.Bid evaluateVideoImp(BidRequest request, BidRequest.Imp imp, EligibleDeal eligibleDeal) {
+    if (!lineItemStore.hasActiveLineItem(MediaType.VIDEO)) {
+      return null;
+    }
+
     BidRequest.Video video = imp.video();
     if (!supportsVideoMime(video)) {
       return null;

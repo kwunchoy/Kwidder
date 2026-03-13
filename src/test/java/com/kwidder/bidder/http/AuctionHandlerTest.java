@@ -3,6 +3,8 @@ package com.kwidder.bidder.http;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.kwidder.bidder.config.AppConfig;
+import com.kwidder.bidder.lineitem.LineItemStore;
+import com.kwidder.bidder.lineitem.MediaType;
 import com.kwidder.bidder.service.BidEngine;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
@@ -27,7 +29,7 @@ class AuctionHandlerTest {
 
   @Test
   void returnsBadRequestForMalformedJson() throws Exception {
-    startServer(config(4.50d, 30.00d));
+    startServer(config(4.50d, 30.00d), null);
 
     HttpResponse<String> response = post("{");
 
@@ -37,7 +39,7 @@ class AuctionHandlerTest {
 
   @Test
   void returnsNoContentForNoBid() throws Exception {
-    startServer(config(0.50d, 30.00d));
+    startServer(config(0.50d, 30.00d), store -> store.create("Banner Test", MediaType.BANNER, true));
 
     HttpResponse<String> response = post("""
         {"id":"req-1","imp":[{"id":"imp-1","bidfloor":1.0,"banner":{"w":300,"h":250}}]}
@@ -49,7 +51,7 @@ class AuctionHandlerTest {
 
   @Test
   void returnsVideoBidForEligibleRequest() throws Exception {
-    startServer(config(4.50d, 30.00d));
+    startServer(config(4.50d, 30.00d), store -> store.create("Video Test", MediaType.VIDEO, true));
 
     HttpResponse<String> response = post("""
         {"id":"req-video-1","imp":[{"id":"imp-video-1","bidfloor":18.5,"bidfloorcur":"USD","video":{"mimes":["video/mp4"],"minduration":15,"maxduration":30,"w":1920,"h":1080,"rqddurs":[15,30]},"pmp":{"private_auction":0,"deals":[{"id":"deal-1","bidfloor":18.0,"bidfloorcur":"USD","wseat":["kwidder"],"wadomain":["ads.kwidder.dev"]}]}}]}
@@ -62,9 +64,24 @@ class AuctionHandlerTest {
     assertEquals(true, response.body().contains("VAST version"));
   }
 
-  private void startServer(AppConfig config) throws IOException {
+  @Test
+  void returnsNoContentWhenNoMatchingLineItemExists() throws Exception {
+    startServer(config(4.50d, 30.00d), null);
+
+    HttpResponse<String> response = post("""
+        {"id":"req-banner-1","imp":[{"id":"imp-banner-1","bidfloor":1.0,"banner":{"w":300,"h":250}}]}
+        """);
+
+    assertEquals(204, response.statusCode());
+  }
+
+  private void startServer(AppConfig config, java.util.function.Consumer<LineItemStore> seedData) throws IOException {
+    LineItemStore lineItemStore = new LineItemStore();
+    if (seedData != null) {
+      seedData.accept(lineItemStore);
+    }
     server = HttpServer.create(new InetSocketAddress(0), 0);
-    server.createContext("/openrtb2/auction", new AuctionHandler(new BidEngine(config), JsonSupport.mapper()));
+    server.createContext("/openrtb2/auction", new AuctionHandler(new BidEngine(config, lineItemStore), JsonSupport.mapper()));
     server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
     server.start();
   }

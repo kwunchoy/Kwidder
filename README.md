@@ -6,7 +6,7 @@ Kwidder (Kwun's Bidder) is a Java demand-side platform (DSP) bidder focused on i
 
 - Accepts `POST` bid requests on `/openrtb2/auction`
 - Parses core OpenRTB 2.6 request objects with room for exchange-specific `ext` fields
-- Applies a simple default policy for banner and video impressions
+- Applies a simple line-item-driven policy for banner and video impressions
 - Returns either a valid OpenRTB bid response or HTTP `204 No Content` for a no-bid
 - Returns HTTP `400` with no body for malformed bid requests
 - Emits the `x-openrtb-version: 2.6` response header
@@ -30,6 +30,7 @@ examples/                                                  Sample OpenRTB reques
 The first implementation is intentionally conservative so we have something predictable to iterate on:
 
 - Banner and video impressions are supported today
+- Kwidder only bids when an active line item exists for the request media type
 - Requests with no impressions are rejected as invalid
 - Banner and video inventory use separate bid ceilings
 - If the publisher blocks our advertiser domain via `badv`, we do not bid
@@ -48,7 +49,7 @@ mvn exec:java
 
 The service reads configuration from environment variables. A starter `.env.example` is included.
 
-Then open `http://localhost:8080/ui` to paste a bid request and inspect Kwidder's response in the browser.
+Then open `http://localhost:8080/ui` to create line items, paste a bid request, and inspect Kwidder's response in the browser.
 
 ## Example request
 

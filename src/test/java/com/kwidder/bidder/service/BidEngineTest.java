@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.kwidder.bidder.config.AppConfig;
+import com.kwidder.bidder.lineitem.LineItemStore;
+import com.kwidder.bidder.lineitem.MediaType;
 import com.kwidder.bidder.model.openrtb.BidRequest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -12,7 +14,9 @@ import org.junit.jupiter.api.Test;
 class BidEngineTest {
   @Test
   void returnsBannerBidForEligibleImpression() {
-    BidEngine engine = new BidEngine(config(4.50d, 30.00d));
+    LineItemStore lineItemStore = new LineItemStore();
+    lineItemStore.create("Banner Test", MediaType.BANNER, true);
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
     BidRequest request = new BidRequest(
         "request-1",
         List.of(new BidRequest.Imp(
@@ -75,7 +79,9 @@ class BidEngineTest {
 
   @Test
   void returnsVideoBidForEligibleImpression() {
-    BidEngine engine = new BidEngine(config(4.50d, 30.00d));
+    LineItemStore lineItemStore = new LineItemStore();
+    lineItemStore.create("Video Test", MediaType.VIDEO, true);
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
     BidRequest request = new BidRequest(
         "request-video-1",
         List.of(new BidRequest.Imp(
@@ -143,7 +149,10 @@ class BidEngineTest {
 
   @Test
   void returnsNoBidForUnsupportedMedia() {
-    BidEngine engine = new BidEngine(config(4.50d, 30.00d));
+    LineItemStore lineItemStore = new LineItemStore();
+    lineItemStore.create("Banner Test", MediaType.BANNER, true);
+    lineItemStore.create("Video Test", MediaType.VIDEO, true);
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
     BidRequest request = new BidRequest(
         "request-1",
         List.of(new BidRequest.Imp(
@@ -173,6 +182,65 @@ class BidEngineTest {
         null,
         null,
         null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+    );
+
+    assertNull(engine.evaluate(request));
+  }
+
+  @Test
+  void returnsNoBidWhenNoMatchingLineItemExists() {
+    LineItemStore lineItemStore = new LineItemStore();
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
+    BidRequest request = new BidRequest(
+        "request-1",
+        List.of(new BidRequest.Imp(
+            "imp-1",
+            new BidRequest.Banner(
+                List.of(new BidRequest.Format(300, 250, null, null, null, null)),
+                300,
+                250,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ),
+            null,
+            null,
+            null,
+            null,
+            "slot-1",
+            null,
+            1.10d,
+            "USD",
+            1,
+            null
+        )),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        1,
+        120,
+        0,
+        null,
+        null,
+        null,
+        List.of("USD"),
         null,
         null,
         null,

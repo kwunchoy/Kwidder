@@ -61,6 +61,10 @@ public final class UiHandler implements HttpHandler {
             grid-template-columns: 1.15fr 0.85fr;
             gap: 18px;
           }
+          .stack {
+            display: grid;
+            gap: 18px;
+          }
           .panel {
             background: color-mix(in srgb, var(--panel) 92%, white 8%);
             border: 1px solid var(--border);
@@ -97,6 +101,21 @@ public final class UiHandler implements HttpHandler {
             transition: transform .12s ease, background-color .12s ease;
           }
           button:hover { transform: translateY(-1px); }
+          input, select {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 11px 12px;
+            font: inherit;
+            color: var(--ink);
+            background: rgba(255,255,255,.82);
+          }
+          label {
+            display: grid;
+            gap: 7px;
+            color: var(--muted);
+            font-size: .9rem;
+          }
           .primary {
             background: var(--accent);
             color: white;
@@ -157,10 +176,72 @@ public final class UiHandler implements HttpHandler {
             color: var(--muted);
             font-size: .94rem;
           }
+          .form {
+            display: grid;
+            gap: 12px;
+            padding: 18px;
+          }
+          .row {
+            display: grid;
+            grid-template-columns: 1.2fr .8fr auto;
+            gap: 12px;
+            align-items: end;
+          }
+          .checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--ink);
+            font-size: .95rem;
+          }
+          .checkbox input {
+            width: auto;
+          }
+          .line-items {
+            display: grid;
+            gap: 12px;
+            padding: 18px;
+          }
+          .line-item {
+            display: grid;
+            gap: 8px;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: rgba(255,255,255,.7);
+          }
+          .line-item-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+          }
+          .pill {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 5px 10px;
+            font-size: .77rem;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            background: #ece7dd;
+            color: var(--ink);
+          }
+          .line-item-meta {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+          }
+          .empty {
+            padding: 18px;
+            color: var(--muted);
+            font-style: italic;
+          }
           @media (max-width: 980px) {
             .grid { grid-template-columns: 1fr; }
             textarea, pre { min-height: 360px; }
             .meta { grid-template-columns: 1fr; }
+            .row { grid-template-columns: 1fr; }
           }
         </style>
       </head>
@@ -186,33 +267,67 @@ public final class UiHandler implements HttpHandler {
               <textarea id="request-input" spellcheck="false"></textarea>
             </div>
 
-            <div class="panel">
-              <div class="panel-head">
-                <h2>Bid Response</h2>
-                <div class="actions">
-                  <button class="ghost" id="format-response" type="button">Format Response</button>
+            <div class="stack">
+              <div class="panel">
+                <div class="panel-head">
+                  <h2>Line Items</h2>
+                  <div class="actions">
+                    <button class="ghost" id="refresh-line-items" type="button">Refresh</button>
+                  </div>
+                </div>
+                <form class="form" id="line-item-form">
+                  <div class="row">
+                    <label>
+                      Line Item Name
+                      <input id="line-item-name" type="text" placeholder="Homepage Banner Buyer">
+                    </label>
+                    <label>
+                      Media Type
+                      <select id="line-item-media-type">
+                        <option value="BANNER">Banner</option>
+                        <option value="VIDEO">Video</option>
+                      </select>
+                    </label>
+                    <button class="primary" type="submit">Create Line Item</button>
+                  </div>
+                  <label class="checkbox">
+                    <input id="line-item-active" type="checkbox" checked>
+                    Start active
+                  </label>
+                </form>
+                <div id="line-items" class="line-items">
+                  <div class="empty">No line items yet. Create one to allow bidding for banner or video inventory.</div>
                 </div>
               </div>
-              <div class="meta">
-                <div class="meta-item">
-                  <span class="meta-label">HTTP Status</span>
-                  <span class="meta-value" id="status-code">Idle</span>
+
+              <div class="panel">
+                <div class="panel-head">
+                  <h2>Bid Response</h2>
+                  <div class="actions">
+                    <button class="ghost" id="format-response" type="button">Format Response</button>
+                  </div>
                 </div>
-                <div class="meta-item">
-                  <span class="meta-label">OpenRTB Version</span>
-                  <span class="meta-value" id="openrtb-version">-</span>
+                <div class="meta">
+                  <div class="meta-item">
+                    <span class="meta-label">HTTP Status</span>
+                    <span class="meta-value" id="status-code">Idle</span>
+                  </div>
+                  <div class="meta-item">
+                    <span class="meta-label">OpenRTB Version</span>
+                    <span class="meta-value" id="openrtb-version">-</span>
+                  </div>
+                  <div class="meta-item">
+                    <span class="meta-label">Outcome</span>
+                    <span class="meta-value" id="outcome">Awaiting request</span>
+                  </div>
                 </div>
-                <div class="meta-item">
-                  <span class="meta-label">Outcome</span>
-                  <span class="meta-value" id="outcome">Awaiting request</span>
-                </div>
+                <pre id="response-output">Send a request to see the response body here.</pre>
               </div>
-              <pre id="response-output">Send a request to see the response body here.</pre>
             </div>
           </section>
 
           <div class="foot">
-            Kwidder posts requests to <code>/openrtb2/auction</code> and shows <code>204 No Content</code> when the engine decides not to bid.
+            Kwidder will only bid when at least one active line item matches the media type in the request.
           </div>
         </div>
 
@@ -318,6 +433,11 @@ public final class UiHandler implements HttpHandler {
           const statusCode = document.getElementById("status-code");
           const openrtbVersion = document.getElementById("openrtb-version");
           const outcome = document.getElementById("outcome");
+          const lineItemsContainer = document.getElementById("line-items");
+          const lineItemForm = document.getElementById("line-item-form");
+          const lineItemName = document.getElementById("line-item-name");
+          const lineItemMediaType = document.getElementById("line-item-media-type");
+          const lineItemActive = document.getElementById("line-item-active");
 
           function setRequest(example) {
             requestInput.value = JSON.stringify(example, null, 2);
@@ -333,6 +453,73 @@ public final class UiHandler implements HttpHandler {
             } else if (code >= 400) {
               statusCode.classList.add("status-bad");
             }
+          }
+
+          function renderLineItems(lineItems) {
+            if (!lineItems.length) {
+              lineItemsContainer.innerHTML = '<div class="empty">No line items yet. Create one to allow bidding for banner or video inventory.</div>';
+              return;
+            }
+
+            lineItemsContainer.innerHTML = "";
+            for (const lineItem of lineItems) {
+              const item = document.createElement("div");
+              item.className = "line-item";
+              item.innerHTML = `
+                <div class="line-item-top">
+                  <strong>${lineItem.name}</strong>
+                  <button class="ghost" type="button" data-delete-id="${lineItem.id}">Delete</button>
+                </div>
+                <div class="line-item-meta">
+                  <span class="pill">${lineItem.mediaType}</span>
+                  <span class="pill">${lineItem.active ? "ACTIVE" : "PAUSED"}</span>
+                </div>
+                <div><code>${lineItem.id}</code></div>
+              `;
+              lineItemsContainer.appendChild(item);
+            }
+          }
+
+          async function refreshLineItems() {
+            const response = await fetch("/api/line-items");
+            const payload = await response.json();
+            renderLineItems(payload.lineItems ?? []);
+          }
+
+          async function createLineItem(event) {
+            event.preventDefault();
+            const payload = {
+              name: lineItemName.value,
+              mediaType: lineItemMediaType.value,
+              active: lineItemActive.checked
+            };
+
+            const response = await fetch("/api/line-items", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+              const errorPayload = await response.json().catch(() => ({ error: "Unable to create line item" }));
+              responseOutput.textContent = JSON.stringify(errorPayload, null, 2);
+              outcome.textContent = "Line item rejected";
+              setStatus(response.status);
+              return;
+            }
+
+            lineItemForm.reset();
+            lineItemActive.checked = true;
+            await refreshLineItems();
+          }
+
+          async function deleteLineItem(id) {
+            await fetch(`/api/line-items/${id}`, {
+              method: "DELETE"
+            });
+            await refreshLineItems();
           }
 
           async function sendRequest() {
@@ -389,8 +576,21 @@ public final class UiHandler implements HttpHandler {
           document.getElementById("load-video").addEventListener("click", () => setRequest(videoExample));
           document.getElementById("send-request").addEventListener("click", () => void sendRequest());
           document.getElementById("format-response").addEventListener("click", formatResponse);
+          document.getElementById("refresh-line-items").addEventListener("click", () => void refreshLineItems());
+          lineItemForm.addEventListener("submit", event => void createLineItem(event));
+          lineItemsContainer.addEventListener("click", event => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) {
+              return;
+            }
+            const id = target.dataset.deleteId;
+            if (id) {
+              void deleteLineItem(id);
+            }
+          });
 
           setRequest(bannerExample);
+          void refreshLineItems();
         </script>
       </body>
       </html>
