@@ -85,10 +85,36 @@ git remote add origin <your-github-repo-url>
 git push -u origin main
 ```
 
-## Next build steps
+## Feature roadmap
 
-- Expand OpenRTB 2.6 object coverage where your exchange integrations need stricter validation
-- Add campaign, creative, and budget models
-- Introduce bidder modules for targeting and pricing
-- Add structured logging, metrics, and request tracing
-- Add tests around exchange-specific request variations
+Here are 10 useful features to add next to make Kwidder feel more like a real bidder platform:
+
+1. Video ad podding support
+Handle pod-level decisioning for CTV and long-form video, including pod position, slot selection, and competitive separation.
+
+2. Campaign budgets and pacing
+Track spend caps, daily budgets, and pacing logic so Kwidder does not overspend.
+
+3. Domain and app targeting
+Allow line items to target specific site domains, app bundles, publishers, or placement IDs.
+
+4. Geo targeting
+Support country, region, city, and ZIP targeting using the device geo object.
+
+5. Device targeting
+Let line items target mobile, desktop, CTV, operating systems, and browser families.
+
+6. Deal-aware bidding
+Support PMP deal prioritization, preferred pricing, and deal-specific creatives.
+
+7. Creative library
+Manage multiple banner and video creatives per line item and choose the best creative dynamically.
+
+8. Frequency capping
+Limit how often the same user sees a campaign by using IDs like `user.id`, `buyeruid`, or `eids`.
+
+9. Win notification and impression tracking
+Add endpoints for `nurl`, impression logging, click tracking, and billing event capture.
+
+10. Analytics dashboard
+Show bid rate, no-bid reasons, win rate, spend, and per-line-item performance in the UI.
