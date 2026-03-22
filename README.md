@@ -89,32 +89,32 @@ git push -u origin main
 
 Here are 10 useful features to add next to make Kwidder feel more like a real bidder platform:
 
-1. Video ad podding support
+1. Video Ad Podding Support
 Handle pod-level decisioning for CTV and long-form video, including pod position, slot selection, and competitive separation.
 
-2. Campaign budgets and pacing
+2. Campaign Budgets and Pacing
 Track spend caps, daily budgets, and pacing logic so Kwidder does not overspend.
 
-3. Domain and app targeting
+3. Domain and App Targeting
 Allow line items to target specific site domains, app bundles, publishers, or placement IDs.
 
-4. Geo targeting
+4. Geo Targeting
 Support country, region, city, and ZIP targeting using the device geo object.
 
-5. Device targeting
+5. Device Targeting
 Let line items target mobile, desktop, CTV, operating systems, and browser families.
 
-6. Deal-aware bidding
+6. Deal-Aware Bidding
 Support PMP deal prioritization, preferred pricing, and deal-specific creatives.
 
-7. Creative library
+7. Creative Library
 Manage multiple banner and video creatives per line item and choose the best creative dynamically.
 
-8. Frequency capping
+8. Frequency Capping
 Limit how often the same user sees a campaign by using IDs like `user.id`, `buyeruid`, or `eids`.
 
-9. Win notification and impression tracking
+9. Win Notification and Impression Tracking
 Add endpoints for `nurl`, impression logging, click tracking, and billing event capture.
 
-10. Analytics dashboard
+10. Analytics Dashboard
 Show bid rate, no-bid reasons, win rate, spend, and per-line-item performance in the UI.
