@@ -183,7 +183,7 @@ public final class UiHandler implements HttpHandler {
           }
           .row {
             display: grid;
-            grid-template-columns: 1.2fr .8fr auto;
+            grid-template-columns: 1.2fr .8fr .7fr .7fr auto;
             gap: 12px;
             align-items: end;
           }
@@ -288,6 +288,14 @@ public final class UiHandler implements HttpHandler {
                         <option value="VIDEO">Video</option>
                       </select>
                     </label>
+                    <label>
+                      Bid CPM
+                      <input id="line-item-bid-cpm" type="number" min="0.01" step="0.01" value="1.25">
+                    </label>
+                    <label>
+                      Budget
+                      <input id="line-item-budget" type="number" min="0.01" step="0.01" value="25.00">
+                    </label>
                     <button class="primary" type="submit">Create Line Item</button>
                   </div>
                   <label class="checkbox">
@@ -327,7 +335,7 @@ public final class UiHandler implements HttpHandler {
           </section>
 
           <div class="foot">
-            Kwidder will only bid when at least one active line item matches the media type in the request.
+            Kwidder will only bid when a matching active line item has enough remaining budget and a bid CPM that clears the request floor.
           </div>
         </div>
 
@@ -365,7 +373,13 @@ public final class UiHandler implements HttpHandler {
               devicetype: 2,
               language: "en"
             },
-            user: { id: "user-123" }
+            user: { id: "user-123" },
+            ext: {
+              kwidder: {
+                allow_multiple_bids: true,
+                max_bids: 3
+              }
+            }
           };
 
           const videoExample = {
@@ -425,6 +439,12 @@ public final class UiHandler implements HttpHandler {
               os: "Android TV",
               osv: "12",
               language: "en"
+            },
+            ext: {
+              kwidder: {
+                allow_multiple_bids: true,
+                max_bids: 3
+              }
             }
           };
 
@@ -437,7 +457,13 @@ public final class UiHandler implements HttpHandler {
           const lineItemForm = document.getElementById("line-item-form");
           const lineItemName = document.getElementById("line-item-name");
           const lineItemMediaType = document.getElementById("line-item-media-type");
+          const lineItemBidCpm = document.getElementById("line-item-bid-cpm");
+          const lineItemBudget = document.getElementById("line-item-budget");
           const lineItemActive = document.getElementById("line-item-active");
+
+          function formatMoney(value) {
+            return Number(value ?? 0).toFixed(2);
+          }
 
           function setRequest(example) {
             requestInput.value = JSON.stringify(example, null, 2);
@@ -474,6 +500,8 @@ public final class UiHandler implements HttpHandler {
                   <span class="pill">${lineItem.mediaType}</span>
                   <span class="pill">${lineItem.active ? "ACTIVE" : "PAUSED"}</span>
                 </div>
+                <div>Bid CPM: <strong>$${formatMoney(lineItem.bidCpm)}</strong></div>
+                <div>Budget: $${formatMoney(lineItem.budget)} | Spent: $${formatMoney(lineItem.spent)} | Remaining: $${formatMoney(lineItem.remainingBudget)}</div>
                 <div><code>${lineItem.id}</code></div>
               `;
               lineItemsContainer.appendChild(item);
@@ -491,7 +519,9 @@ public final class UiHandler implements HttpHandler {
             const payload = {
               name: lineItemName.value,
               mediaType: lineItemMediaType.value,
-              active: lineItemActive.checked
+              active: lineItemActive.checked,
+              bidCpm: Number(lineItemBidCpm.value),
+              budget: Number(lineItemBudget.value)
             };
 
             const response = await fetch("/api/line-items", {

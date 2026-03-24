@@ -149,6 +149,10 @@
     }
   },
   "ext": {
-    "inventory_partner": "premium-ctv-exchange"
+    "inventory_partner": "premium-ctv-exchange",
+    "kwidder": {
+      "allow_multiple_bids": true,
+      "max_bids": 3
+    }
   }
 }

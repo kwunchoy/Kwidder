@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.kwidder.bidder.config.AppConfig;
+import com.kwidder.bidder.http.JsonSupport;
 import com.kwidder.bidder.lineitem.LineItemStore;
 import com.kwidder.bidder.lineitem.MediaType;
 import com.kwidder.bidder.model.openrtb.BidRequest;
@@ -15,7 +16,7 @@ class BidEngineTest {
   @Test
   void returnsBannerBidForEligibleImpression() {
     LineItemStore lineItemStore = new LineItemStore();
-    lineItemStore.create("Banner Test", MediaType.BANNER, true);
+    lineItemStore.create("Banner Test", MediaType.BANNER, true, 1.25d, 10.00d);
     BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
     BidRequest request = new BidRequest(
         "request-1",
@@ -80,7 +81,7 @@ class BidEngineTest {
   @Test
   void returnsVideoBidForEligibleImpression() {
     LineItemStore lineItemStore = new LineItemStore();
-    lineItemStore.create("Video Test", MediaType.VIDEO, true);
+    lineItemStore.create("Video Test", MediaType.VIDEO, true, 18.75d, 40.00d);
     BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
     BidRequest request = new BidRequest(
         "request-video-1",
@@ -150,8 +151,8 @@ class BidEngineTest {
   @Test
   void returnsNoBidForUnsupportedMedia() {
     LineItemStore lineItemStore = new LineItemStore();
-    lineItemStore.create("Banner Test", MediaType.BANNER, true);
-    lineItemStore.create("Video Test", MediaType.VIDEO, true);
+    lineItemStore.create("Banner Test", MediaType.BANNER, true, 1.25d, 10.00d);
+    lineItemStore.create("Video Test", MediaType.VIDEO, true, 18.75d, 40.00d);
     BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
     BidRequest request = new BidRequest(
         "request-1",
@@ -251,6 +252,199 @@ class BidEngineTest {
     );
 
     assertNull(engine.evaluate(request));
+  }
+
+  @Test
+  void returnsNoBidWhenLineItemBidCpmDoesNotMeetFloor() {
+    LineItemStore lineItemStore = new LineItemStore();
+    lineItemStore.create("Banner Test", MediaType.BANNER, true, 1.10d, 10.00d);
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
+
+    BidRequest request = new BidRequest(
+        "request-1",
+        List.of(new BidRequest.Imp(
+            "imp-1",
+            new BidRequest.Banner(
+                List.of(new BidRequest.Format(300, 250, null, null, null, null)),
+                300,
+                250,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ),
+            null,
+            null,
+            null,
+            null,
+            "slot-1",
+            null,
+            1.25d,
+            "USD",
+            1,
+            null
+        )),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        1,
+        120,
+        0,
+        null,
+        null,
+        null,
+        List.of("USD"),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+    );
+
+    assertNull(engine.evaluate(request));
+  }
+
+  @Test
+  void stopsBiddingWhenLineItemBudgetIsSpent() {
+    LineItemStore lineItemStore = new LineItemStore();
+    lineItemStore.create("Banner Test", MediaType.BANNER, true, 1.25d, 2.50d);
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
+    BidRequest request = new BidRequest(
+        "request-1",
+        List.of(new BidRequest.Imp(
+            "imp-1",
+            new BidRequest.Banner(
+                List.of(new BidRequest.Format(300, 250, null, null, null, null)),
+                300,
+                250,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ),
+            null,
+            null,
+            null,
+            null,
+            "slot-1",
+            null,
+            1.00d,
+            "USD",
+            1,
+            null
+        )),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        1,
+        120,
+        0,
+        null,
+        null,
+        null,
+        List.of("USD"),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+    );
+
+    assertNotNull(engine.evaluate(request));
+    assertNotNull(engine.evaluate(request));
+    assertNull(engine.evaluate(request));
+  }
+
+  @Test
+  void returnsMultipleBannerBidsSortedByPriceWhenRequestAllowsIt() throws Exception {
+    LineItemStore lineItemStore = new LineItemStore();
+    lineItemStore.create("Banner High", MediaType.BANNER, true, 2.25d, 10.00d);
+    lineItemStore.create("Banner Mid", MediaType.BANNER, true, 1.80d, 10.00d);
+    lineItemStore.create("Banner Low", MediaType.BANNER, true, 1.50d, 10.00d);
+    lineItemStore.create("Banner Too Low", MediaType.BANNER, true, 1.10d, 10.00d);
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
+
+    BidRequest request = JsonSupport.mapper().readValue("""
+        {
+          "id": "request-multi-1",
+          "imp": [
+            {
+              "id": "imp-1",
+              "bidfloor": 1.25,
+              "banner": {
+                "w": 300,
+                "h": 250
+              }
+            }
+          ],
+          "ext": {
+            "kwidder": {
+              "allow_multiple_bids": true,
+              "max_bids": 3
+            }
+          }
+        }
+        """, BidRequest.class);
+
+    var response = engine.evaluate(request);
+
+    assertNotNull(response);
+    assertEquals(3, response.seatbid().get(0).bid().size());
+    assertEquals(2.25d, response.seatbid().get(0).bid().get(0).price());
+    assertEquals(1.80d, response.seatbid().get(0).bid().get(1).price());
+    assertEquals(1.50d, response.seatbid().get(0).bid().get(2).price());
+  }
+
+  @Test
+  void defaultsToSingleBidWhenRequestDoesNotAllowMultipleBids() throws Exception {
+    LineItemStore lineItemStore = new LineItemStore();
+    lineItemStore.create("Banner High", MediaType.BANNER, true, 2.25d, 10.00d);
+    lineItemStore.create("Banner Mid", MediaType.BANNER, true, 1.80d, 10.00d);
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
+
+    BidRequest request = JsonSupport.mapper().readValue("""
+        {
+          "id": "request-single-1",
+          "imp": [
+            {
+              "id": "imp-1",
+              "bidfloor": 1.25,
+              "banner": {
+                "w": 300,
+                "h": 250
+              }
+            }
+          ]
+        }
+        """, BidRequest.class);
+
+    var response = engine.evaluate(request);
+
+    assertNotNull(response);
+    assertEquals(1, response.seatbid().get(0).bid().size());
+    assertEquals(2.25d, response.seatbid().get(0).bid().get(0).price());
   }
 
   private AppConfig config(double bannerMaxBidCpm, double videoMaxBidCpm) {

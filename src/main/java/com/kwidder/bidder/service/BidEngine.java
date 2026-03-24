@@ -1,6 +1,7 @@
 package com.kwidder.bidder.service;
 
 import com.kwidder.bidder.config.AppConfig;
+import com.kwidder.bidder.lineitem.LineItem;
 import com.kwidder.bidder.lineitem.LineItemStore;
 import com.kwidder.bidder.lineitem.MediaType;
 import com.kwidder.bidder.model.openrtb.BidRequest;
@@ -28,9 +29,9 @@ public final class BidEngine {
 
     List<BidResponse.Bid> bids = new ArrayList<>();
     for (BidRequest.Imp imp : request.imp()) {
-      BidResponse.Bid bid = evaluateImp(request, imp);
-      if (bid != null) {
-        bids.add(bid);
+      List<BidResponse.Bid> impBids = evaluateImp(request, imp);
+      if (!impBids.isEmpty()) {
+        bids.addAll(impBids);
       }
     }
 
@@ -48,20 +49,20 @@ public final class BidEngine {
     );
   }
 
-  private BidResponse.Bid evaluateImp(BidRequest request, BidRequest.Imp imp) {
+  private List<BidResponse.Bid> evaluateImp(BidRequest request, BidRequest.Imp imp) {
     if (imp == null || imp.id() == null || imp.id().isBlank()) {
-      return null;
+      return List.of();
     }
     if (!isSeatAllowed(request)) {
-      return null;
+      return List.of();
     }
     if (isBlockedAdvertiser(request.badv(), config.adDomain())) {
-      return null;
+      return List.of();
     }
 
     EligibleDeal eligibleDeal = eligibleDeal(imp);
     if (eligibleDeal == null && isPrivateAuction(imp)) {
-      return null;
+      return List.of();
     }
 
     if (imp.banner() != null) {
@@ -72,70 +73,70 @@ public final class BidEngine {
       return evaluateVideoImp(request, imp, eligibleDeal);
     }
 
-    return null;
+    return List.of();
   }
 
-  private BidResponse.Bid evaluateBannerImp(BidRequest request, BidRequest.Imp imp, EligibleDeal eligibleDeal) {
-    if (!lineItemStore.hasActiveLineItem(MediaType.BANNER)) {
-      return null;
-    }
-
+  private List<BidResponse.Bid> evaluateBannerImp(BidRequest request, BidRequest.Imp imp, EligibleDeal eligibleDeal) {
     BannerSize size = bannerSize(imp.banner());
     double floor = effectiveFloor(imp, eligibleDeal, null);
-    if (floor > config.bannerMaxBidCpm()) {
-      return null;
+    List<LineItem> lineItems = lineItemStore.reserveBids(MediaType.BANNER, floor, request.maxBidsPerImp());
+    if (lineItems.isEmpty()) {
+      return List.of();
     }
 
-    double price = priceForImp(config.bannerBaseBidCpm(), config.bannerMaxBidCpm(), floor);
-    return new BidResponse.Bid(
-        nextId("bid"),
-        imp.id(),
-        price,
-        List.of(config.adDomain()),
-        config.bannerCampaignId(),
-        config.bannerCreativeId(),
-        config.bannerCreativeId(),
-        size.width(),
-        size.height(),
-        bannerMarkup(request.id(), imp.id(), size),
-        1,
-        dealId(eligibleDeal),
-        null
-    );
+    List<BidResponse.Bid> bids = new ArrayList<>(lineItems.size());
+    for (LineItem lineItem : lineItems) {
+      bids.add(new BidResponse.Bid(
+          nextId("bid"),
+          imp.id(),
+          lineItem.bidCpm(),
+          List.of(config.adDomain()),
+          config.bannerCampaignId(),
+          config.bannerCreativeId(),
+          config.bannerCreativeId(),
+          size.width(),
+          size.height(),
+          bannerMarkup(request.id(), imp.id(), size),
+          1,
+          dealId(eligibleDeal),
+          null
+      ));
+    }
+    return bids;
   }
 
-  private BidResponse.Bid evaluateVideoImp(BidRequest request, BidRequest.Imp imp, EligibleDeal eligibleDeal) {
-    if (!lineItemStore.hasActiveLineItem(MediaType.VIDEO)) {
-      return null;
-    }
-
+  private List<BidResponse.Bid> evaluateVideoImp(BidRequest request, BidRequest.Imp imp, EligibleDeal eligibleDeal) {
     BidRequest.Video video = imp.video();
     if (!supportsVideoMime(video)) {
-      return null;
+      return List.of();
     }
 
     VideoSpec videoSpec = videoSpec(video);
     double floor = effectiveFloor(imp, eligibleDeal, videoSpec.durationSeconds());
-    if (floor > config.videoMaxBidCpm()) {
-      return null;
+    List<LineItem> lineItems = lineItemStore.reserveBids(MediaType.VIDEO, floor, request.maxBidsPerImp());
+    if (lineItems.isEmpty()) {
+      return List.of();
     }
 
-    double price = priceForImp(config.videoBaseBidCpm(), config.videoMaxBidCpm(), floor);
-    return new BidResponse.Bid(
-        nextId("bid"),
-        imp.id(),
-        price,
-        List.of(config.adDomain()),
-        config.videoCampaignId(),
-        config.videoCreativeId(),
-        config.videoCreativeId(),
-        videoSpec.width(),
-        videoSpec.height(),
-        vastMarkup(request.id(), imp.id(), videoSpec),
-        2,
-        dealId(eligibleDeal),
-        null
-    );
+    List<BidResponse.Bid> bids = new ArrayList<>(lineItems.size());
+    for (LineItem lineItem : lineItems) {
+      bids.add(new BidResponse.Bid(
+          nextId("bid"),
+          imp.id(),
+          lineItem.bidCpm(),
+          List.of(config.adDomain()),
+          config.videoCampaignId(),
+          config.videoCreativeId(),
+          config.videoCreativeId(),
+          videoSpec.width(),
+          videoSpec.height(),
+          vastMarkup(request.id(), imp.id(), videoSpec),
+          2,
+          dealId(eligibleDeal),
+          null
+      ));
+    }
+    return bids;
   }
 
   private boolean isSeatAllowed(BidRequest request) {
@@ -260,11 +261,6 @@ public final class BidEngine {
       }
     }
     return floor;
-  }
-
-  private double priceForImp(double baseBidCpm, double maxBidCpm, double floor) {
-    double price = Math.max(baseBidCpm, floor > 0.0d ? floor + 0.05d : baseBidCpm);
-    return Math.min(price, maxBidCpm);
   }
 
   private String dealId(EligibleDeal eligibleDeal) {

@@ -30,6 +30,21 @@ public record BidRequest(
     @JsonProperty("bapp") List<String> bapp,
     @JsonProperty("ext") JsonNode ext
 ) {
+  public int maxBidsPerImp() {
+    JsonNode kwidder = ext == null ? null : ext.path("kwidder");
+    if (kwidder == null || kwidder.isMissingNode()) {
+      return 1;
+    }
+
+    boolean allowMultipleBids = kwidder.path("allow_multiple_bids").asBoolean(false);
+    if (!allowMultipleBids) {
+      return 1;
+    }
+
+    int maxBids = kwidder.path("max_bids").asInt(1);
+    return Math.max(1, maxBids);
+  }
+
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record Imp(
       @JsonProperty("id") String id,

@@ -44,7 +44,9 @@ public final class LineItemHandler implements HttpHandler {
     CreateLineItemRequest request = mapper.readValue(HttpResponses.readBody(exchange), CreateLineItemRequest.class);
     MediaType mediaType = MediaType.fromString(request.mediaType());
     boolean active = request.active() == null || request.active();
-    LineItem lineItem = lineItemStore.create(request.name(), mediaType, active);
+    double bidCpm = request.bidCpm() == null ? 0.0d : request.bidCpm();
+    double budget = request.budget() == null ? 0.0d : request.budget();
+    LineItem lineItem = lineItemStore.create(request.name(), mediaType, active, bidCpm, budget);
     HttpResponses.writeJson(exchange, 201, lineItem, mapper);
   }
 

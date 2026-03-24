@@ -128,6 +128,10 @@
     }
   },
   "ext": {
-    "auction_env": "mobile_web"
+    "auction_env": "mobile_web",
+    "kwidder": {
+      "allow_multiple_bids": true,
+      "max_bids": 3
+    }
   }
 }

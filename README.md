@@ -30,13 +30,15 @@ examples/                                                  Sample OpenRTB reques
 The first implementation is intentionally conservative so we have something predictable to iterate on:
 
 - Banner and video impressions are supported today
-- Kwidder only bids when an active line item exists for the request media type
+- Kwidder only bids when an active line item matches the request media type
+- Each line item sets its own bid CPM and total budget
+- Kwidder spends line item budget on every bid response it returns, and stops bidding once that budget is exhausted
+- By default Kwidder returns one bid per impression, but a request can opt into multiple bids through `ext.kwidder.allow_multiple_bids` and `ext.kwidder.max_bids`
 - Requests with no impressions are rejected as invalid
-- Banner and video inventory use separate bid ceilings
 - If the publisher blocks our advertiser domain via `badv`, we do not bid
-- The bid price is derived from the configured media-type base CPM and the request floor
+- A line item only bids when its bid CPM clears the request floor
 
-This gives us a safe place to add richer decisioning later such as user targeting, deal logic, pacing, creative selection, category filtering, frequency caps, and campaign budget controls.
+This gives us a safe place to add richer decisioning later such as user targeting, deal logic, pacing, creative selection, category filtering, and frequency caps.
 
 ## Run locally
 
@@ -49,7 +51,22 @@ mvn exec:java
 
 The service reads configuration from environment variables. A starter `.env.example` is included.
 
-Then open `http://localhost:8080/ui` to create line items, paste a bid request, and inspect Kwidder's response in the browser.
+Then open `http://localhost:8080/ui` to create line items with media type, bid CPM, and budget, paste a bid request, and inspect Kwidder's response in the browser.
+
+To let one impression return multiple bids, include this request extension:
+
+```json
+{
+  "ext": {
+    "kwidder": {
+      "allow_multiple_bids": true,
+      "max_bids": 3
+    }
+  }
+}
+```
+
+When enabled, Kwidder returns up to `max_bids` eligible bids for each impression, sorted from highest CPM to lowest CPM.
 
 ## Example request
 
