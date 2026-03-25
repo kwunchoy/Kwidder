@@ -14,7 +14,8 @@ public record AppConfig(
     String videoCreativeId,
     String videoCampaignId,
     String videoMediaUrl,
-    int videoDurationSeconds
+    int videoDurationSeconds,
+    String lineItemStorePath
 ) {
   public static AppConfig load() {
     return new AppConfig(
@@ -31,7 +32,8 @@ public record AppConfig(
         env("KWIDDER_VIDEO_CREATIVE_ID", "kwidder-vast-001"),
         env("KWIDDER_VIDEO_CAMPAIGN_ID", "kwidder-video-campaign-001"),
         env("KWIDDER_VIDEO_MEDIA_URL", "https://cdn.kwidder.dev/video/kwidder-ctv-15s.mp4"),
-        envInt("KWIDDER_VIDEO_DURATION_SECONDS", 15)
+        envInt("KWIDDER_VIDEO_DURATION_SECONDS", 15),
+        env("KWIDDER_LINE_ITEM_STORE_PATH", "data/line-items.json")
     );
   }
 

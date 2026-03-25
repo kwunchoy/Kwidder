@@ -12,6 +12,7 @@ import com.kwidder.bidder.service.BidEngine;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.file.Path;
 import java.util.concurrent.Executors;
 
 public final class Application {
@@ -20,7 +21,7 @@ public final class Application {
 
   public static void main(String[] args) throws IOException {
     AppConfig config = AppConfig.load();
-    LineItemStore lineItemStore = new LineItemStore();
+    LineItemStore lineItemStore = new LineItemStore(Path.of(config.lineItemStorePath()), JsonSupport.mapper());
     BidEngine bidEngine = new BidEngine(config, lineItemStore);
 
     HttpServer server = HttpServer.create(new InetSocketAddress(config.port()), 0);

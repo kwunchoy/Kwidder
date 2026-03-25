@@ -1,0 +1,35 @@
+package com.kwidder.bidder.lineitem;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import com.kwidder.bidder.http.JsonSupport;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+class LineItemStoreTest {
+  @TempDir
+  Path tempDir;
+
+  @Test
+  void persistsLineItemsAndSpentAmountsAcrossStoreRestarts() throws Exception {
+    Path storagePath = tempDir.resolve("line-items.json");
+
+    LineItemStore firstStore = new LineItemStore(storagePath, JsonSupport.mapper());
+    LineItem created = firstStore.create("Banner Durable", MediaType.BANNER, true, 1.25d, 5.00d);
+    firstStore.reserveBids(MediaType.BANNER, 1.00d, 1);
+
+    LineItemStore secondStore = new LineItemStore(storagePath, JsonSupport.mapper());
+
+    assertEquals(true, Files.exists(storagePath));
+    assertEquals(1, secondStore.list().size());
+    LineItem reloaded = secondStore.list().get(0);
+    assertEquals(created.id(), reloaded.id());
+    assertEquals("Banner Durable", reloaded.name());
+    assertEquals(1.25d, reloaded.bidCpm());
+    assertEquals(5.00d, reloaded.budget());
+    assertEquals(1.25d, reloaded.spent());
+    assertEquals(3.75d, reloaded.remainingBudget());
+  }
+}

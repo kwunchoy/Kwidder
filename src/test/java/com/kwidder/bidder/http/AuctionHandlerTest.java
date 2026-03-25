@@ -150,7 +150,8 @@ class AuctionHandlerTest {
         "video-creative-1",
         "video-campaign-1",
         "https://cdn.kwidder.dev/video/test-15s.mp4",
-        15
+        15,
+        "build/test-line-items.json"
     );
   }
 }
