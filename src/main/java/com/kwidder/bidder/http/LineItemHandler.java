@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kwidder.bidder.lineitem.CreateLineItemRequest;
 import com.kwidder.bidder.lineitem.LineItem;
 import com.kwidder.bidder.lineitem.LineItemStore;
+import com.kwidder.bidder.lineitem.LineItemTargeting;
 import com.kwidder.bidder.lineitem.MediaType;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -46,7 +47,8 @@ public final class LineItemHandler implements HttpHandler {
     boolean active = request.active() == null || request.active();
     double bidCpm = request.bidCpm() == null ? 0.0d : request.bidCpm();
     double budget = request.budget() == null ? 0.0d : request.budget();
-    LineItem lineItem = lineItemStore.create(request.name(), mediaType, active, bidCpm, budget);
+    LineItemTargeting targeting = request.targeting() == null ? LineItemTargeting.none() : request.targeting();
+    LineItem lineItem = lineItemStore.create(request.name(), mediaType, active, bidCpm, budget, targeting);
     HttpResponses.writeJson(exchange, 201, lineItem, mapper);
   }
 

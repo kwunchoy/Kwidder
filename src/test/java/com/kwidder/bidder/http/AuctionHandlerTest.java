@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.kwidder.bidder.config.AppConfig;
 import com.kwidder.bidder.lineitem.LineItemStore;
+import com.kwidder.bidder.lineitem.LineItemTargeting;
 import com.kwidder.bidder.lineitem.MediaType;
 import com.kwidder.bidder.service.BidEngine;
 import com.sun.net.httpserver.HttpServer;
@@ -39,7 +40,7 @@ class AuctionHandlerTest {
 
   @Test
   void returnsNoContentForNoBid() throws Exception {
-    startServer(config(0.50d, 30.00d), store -> store.create("Banner Test", MediaType.BANNER, true, 0.50d, 10.00d));
+    startServer(config(0.50d, 30.00d), store -> store.create("Banner Test", MediaType.BANNER, true, 0.50d, 10.00d, LineItemTargeting.none()));
 
     HttpResponse<String> response = post("""
         {"id":"req-1","imp":[{"id":"imp-1","bidfloor":1.0,"banner":{"w":300,"h":250}}]}
@@ -51,7 +52,7 @@ class AuctionHandlerTest {
 
   @Test
   void returnsVideoBidForEligibleRequest() throws Exception {
-    startServer(config(4.50d, 30.00d), store -> store.create("Video Test", MediaType.VIDEO, true, 18.75d, 40.00d));
+    startServer(config(4.50d, 30.00d), store -> store.create("Video Test", MediaType.VIDEO, true, 18.75d, 40.00d, LineItemTargeting.none()));
 
     HttpResponse<String> response = post("""
         {"id":"req-video-1","imp":[{"id":"imp-video-1","bidfloor":18.5,"bidfloorcur":"USD","video":{"mimes":["video/mp4"],"minduration":15,"maxduration":30,"w":1920,"h":1080,"rqddurs":[15,30]},"pmp":{"private_auction":0,"deals":[{"id":"deal-1","bidfloor":18.0,"bidfloorcur":"USD","wseat":["kwidder"],"wadomain":["ads.kwidder.dev"]}]}}]}
@@ -77,7 +78,7 @@ class AuctionHandlerTest {
 
   @Test
   void returnsNoContentAfterLineItemBudgetIsExhausted() throws Exception {
-    startServer(config(4.50d, 30.00d), store -> store.create("Banner Test", MediaType.BANNER, true, 1.25d, 1.25d));
+    startServer(config(4.50d, 30.00d), store -> store.create("Banner Test", MediaType.BANNER, true, 1.25d, 1.25d, LineItemTargeting.none()));
 
     HttpResponse<String> first = post("""
         {"id":"req-banner-1","imp":[{"id":"imp-banner-1","bidfloor":1.0,"banner":{"w":300,"h":250}}]}
@@ -93,9 +94,9 @@ class AuctionHandlerTest {
   @Test
   void returnsMultipleBidsSortedByPriceWhenRequestAllowsIt() throws Exception {
     startServer(config(4.50d, 30.00d), store -> {
-      store.create("Banner High", MediaType.BANNER, true, 2.25d, 10.00d);
-      store.create("Banner Mid", MediaType.BANNER, true, 1.80d, 10.00d);
-      store.create("Banner Low", MediaType.BANNER, true, 1.50d, 10.00d);
+      store.create("Banner High", MediaType.BANNER, true, 2.25d, 10.00d, LineItemTargeting.none());
+      store.create("Banner Mid", MediaType.BANNER, true, 1.80d, 10.00d, LineItemTargeting.none());
+      store.create("Banner Low", MediaType.BANNER, true, 1.50d, 10.00d, LineItemTargeting.none());
     });
 
     HttpResponse<String> response = post("""

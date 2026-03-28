@@ -5,6 +5,7 @@ public record CreateLineItemRequest(
     String mediaType,
     Boolean active,
     Double bidCpm,
-    Double budget
+    Double budget,
+    LineItemTargeting targeting
 ) {
 }

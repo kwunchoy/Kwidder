@@ -197,6 +197,31 @@ public final class UiHandler implements HttpHandler {
           .checkbox input {
             width: auto;
           }
+          .targeting {
+            display: grid;
+            gap: 12px;
+            padding: 14px;
+            border: 1px dashed var(--border);
+            border-radius: 14px;
+            background: rgba(255,255,255,.45);
+          }
+          .targeting-title {
+            margin: 0;
+            font-size: .82rem;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--muted);
+          }
+          .device-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+          }
+          .field-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+          }
           .line-items {
             display: grid;
             gap: 12px;
@@ -242,6 +267,7 @@ public final class UiHandler implements HttpHandler {
             textarea, pre { min-height: 360px; }
             .meta { grid-template-columns: 1fr; }
             .row { grid-template-columns: 1fr; }
+            .device-grid, .field-grid { grid-template-columns: 1fr; }
           }
         </style>
       </head>
@@ -302,6 +328,36 @@ public final class UiHandler implements HttpHandler {
                     <input id="line-item-active" type="checkbox" checked>
                     Start active
                   </label>
+                  <div class="targeting">
+                    <div class="targeting-title">Targeting</div>
+                    <div class="device-grid">
+                      <label class="checkbox"><input class="device-type-option" type="checkbox" value="1"> Mobile or Tablet (1)</label>
+                      <label class="checkbox"><input class="device-type-option" type="checkbox" value="2"> Desktop (2)</label>
+                      <label class="checkbox"><input class="device-type-option" type="checkbox" value="3"> Connected TV (3)</label>
+                      <label class="checkbox"><input class="device-type-option" type="checkbox" value="4"> Phone (4)</label>
+                      <label class="checkbox"><input class="device-type-option" type="checkbox" value="5"> Tablet (5)</label>
+                      <label class="checkbox"><input class="device-type-option" type="checkbox" value="6"> Connected Device (6)</label>
+                      <label class="checkbox"><input class="device-type-option" type="checkbox" value="7"> Set-Top Box (7)</label>
+                    </div>
+                    <div class="field-grid">
+                      <label>
+                        Countries
+                        <input id="line-item-countries" type="text" placeholder="USA, CAN">
+                      </label>
+                      <label>
+                        Regions
+                        <input id="line-item-regions" type="text" placeholder="CA, NY">
+                      </label>
+                      <label>
+                        Cities
+                        <input id="line-item-cities" type="text" placeholder="Los Angeles, New York">
+                      </label>
+                      <label>
+                        ZIP Codes
+                        <input id="line-item-zips" type="text" placeholder="90001, 10001">
+                      </label>
+                    </div>
+                  </div>
                 </form>
                 <div id="line-items" class="line-items">
                   <div class="empty">No line items yet. Create one to allow bidding for banner or video inventory.</div>
@@ -335,7 +391,7 @@ public final class UiHandler implements HttpHandler {
           </section>
 
           <div class="foot">
-            Kwidder will only bid when a matching active line item has enough remaining budget and a bid CPM that clears the request floor.
+            Kwidder will only bid when a matching active line item has enough remaining budget, clears the request floor, and matches any device type or geo targeting filters you set.
           </div>
         </div>
 
@@ -460,9 +516,45 @@ public final class UiHandler implements HttpHandler {
           const lineItemBidCpm = document.getElementById("line-item-bid-cpm");
           const lineItemBudget = document.getElementById("line-item-budget");
           const lineItemActive = document.getElementById("line-item-active");
+          const lineItemCountries = document.getElementById("line-item-countries");
+          const lineItemRegions = document.getElementById("line-item-regions");
+          const lineItemCities = document.getElementById("line-item-cities");
+          const lineItemZips = document.getElementById("line-item-zips");
+          const deviceTypeOptions = Array.from(document.querySelectorAll(".device-type-option"));
 
           function formatMoney(value) {
             return Number(value ?? 0).toFixed(2);
+          }
+
+          function parseCsv(value) {
+            return String(value ?? "")
+              .split(",")
+              .map(entry => entry.trim())
+              .filter(Boolean);
+          }
+
+          function targetingSummary(targeting) {
+            if (!targeting) {
+              return "Any device, any geo";
+            }
+
+            const parts = [];
+            if ((targeting.deviceTypes ?? []).length) {
+              parts.push(`Devices: ${(targeting.deviceTypes ?? []).join(", ")}`);
+            }
+            if ((targeting.countries ?? []).length) {
+              parts.push(`Countries: ${(targeting.countries ?? []).join(", ")}`);
+            }
+            if ((targeting.regions ?? []).length) {
+              parts.push(`Regions: ${(targeting.regions ?? []).join(", ")}`);
+            }
+            if ((targeting.cities ?? []).length) {
+              parts.push(`Cities: ${(targeting.cities ?? []).join(", ")}`);
+            }
+            if ((targeting.zips ?? []).length) {
+              parts.push(`ZIPs: ${(targeting.zips ?? []).join(", ")}`);
+            }
+            return parts.length ? parts.join(" | ") : "Any device, any geo";
           }
 
           function setRequest(example) {
@@ -502,6 +594,7 @@ public final class UiHandler implements HttpHandler {
                 </div>
                 <div>Bid CPM: <strong>$${formatMoney(lineItem.bidCpm)}</strong></div>
                 <div>Budget: $${formatMoney(lineItem.budget)} | Spent: $${formatMoney(lineItem.spent)} | Remaining: $${formatMoney(lineItem.remainingBudget)}</div>
+                <div>Targeting: ${targetingSummary(lineItem.targeting)}</div>
                 <div><code>${lineItem.id}</code></div>
               `;
               lineItemsContainer.appendChild(item);
@@ -521,7 +614,14 @@ public final class UiHandler implements HttpHandler {
               mediaType: lineItemMediaType.value,
               active: lineItemActive.checked,
               bidCpm: Number(lineItemBidCpm.value),
-              budget: Number(lineItemBudget.value)
+              budget: Number(lineItemBudget.value),
+              targeting: {
+                deviceTypes: deviceTypeOptions.filter(option => option.checked).map(option => Number(option.value)),
+                countries: parseCsv(lineItemCountries.value),
+                regions: parseCsv(lineItemRegions.value),
+                cities: parseCsv(lineItemCities.value),
+                zips: parseCsv(lineItemZips.value)
+              }
             };
 
             const response = await fetch("/api/line-items", {
@@ -542,6 +642,9 @@ public final class UiHandler implements HttpHandler {
 
             lineItemForm.reset();
             lineItemActive.checked = true;
+            deviceTypeOptions.forEach(option => {
+              option.checked = false;
+            });
             await refreshLineItems();
           }
 

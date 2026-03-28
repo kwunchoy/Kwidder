@@ -3,6 +3,7 @@ package com.kwidder.bidder.service;
 import com.kwidder.bidder.config.AppConfig;
 import com.kwidder.bidder.lineitem.LineItem;
 import com.kwidder.bidder.lineitem.LineItemStore;
+import com.kwidder.bidder.lineitem.LineItemTargeting;
 import com.kwidder.bidder.lineitem.MediaType;
 import com.kwidder.bidder.model.openrtb.BidRequest;
 import com.kwidder.bidder.model.openrtb.BidResponse;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class BidEngine {
@@ -79,7 +81,12 @@ public final class BidEngine {
   private List<BidResponse.Bid> evaluateBannerImp(BidRequest request, BidRequest.Imp imp, EligibleDeal eligibleDeal) {
     BannerSize size = bannerSize(imp.banner());
     double floor = effectiveFloor(imp, eligibleDeal, null);
-    List<LineItem> lineItems = lineItemStore.reserveBids(MediaType.BANNER, floor, request.maxBidsPerImp());
+    List<LineItem> lineItems = lineItemStore.reserveBids(
+        MediaType.BANNER,
+        floor,
+        request.maxBidsPerImp(),
+        lineItem -> matchesTargeting(lineItem, request)
+    );
     if (lineItems.isEmpty()) {
       return List.of();
     }
@@ -113,7 +120,12 @@ public final class BidEngine {
 
     VideoSpec videoSpec = videoSpec(video);
     double floor = effectiveFloor(imp, eligibleDeal, videoSpec.durationSeconds());
-    List<LineItem> lineItems = lineItemStore.reserveBids(MediaType.VIDEO, floor, request.maxBidsPerImp());
+    List<LineItem> lineItems = lineItemStore.reserveBids(
+        MediaType.VIDEO,
+        floor,
+        request.maxBidsPerImp(),
+        lineItem -> matchesTargeting(lineItem, request)
+    );
     if (lineItems.isEmpty()) {
       return List.of();
     }
@@ -156,6 +168,55 @@ public final class BidEngine {
       }
     }
     return false;
+  }
+
+  private boolean matchesTargeting(LineItem lineItem, BidRequest request) {
+    LineItemTargeting targeting = lineItem.targeting();
+    if (targeting == null) {
+      return true;
+    }
+    return matchesDeviceType(targeting, request.device()) && matchesGeo(targeting, request);
+  }
+
+  private boolean matchesDeviceType(LineItemTargeting targeting, BidRequest.Device device) {
+    if (!targeting.hasDeviceTypeFilters()) {
+      return true;
+    }
+    if (device == null || device.devicetype() == null) {
+      return false;
+    }
+    return targeting.deviceTypes().contains(device.devicetype());
+  }
+
+  private boolean matchesGeo(LineItemTargeting targeting, BidRequest request) {
+    if (!targeting.hasGeoFilters()) {
+      return true;
+    }
+
+    BidRequest.Geo geo = request.device() != null && request.device().geo() != null
+        ? request.device().geo()
+        : request.user() == null ? null : request.user().geo();
+    if (geo == null) {
+      return false;
+    }
+
+    return matchesTextFilter(targeting.countries(), geo.country(), true)
+        && matchesTextFilter(targeting.regions(), geo.region(), false)
+        && matchesTextFilter(targeting.cities(), geo.city(), false)
+        && matchesTextFilter(targeting.zips(), geo.zip(), false);
+  }
+
+  private boolean matchesTextFilter(List<String> filters, String value, boolean uppercase) {
+    if (filters == null || filters.isEmpty()) {
+      return true;
+    }
+    if (value == null || value.isBlank()) {
+      return false;
+    }
+    String normalized = uppercase
+        ? value.trim().toUpperCase(Locale.ROOT)
+        : value.trim().toLowerCase(Locale.ROOT);
+    return filters.stream().filter(Objects::nonNull).anyMatch(normalized::equals);
   }
 
   private BannerSize bannerSize(BidRequest.Banner banner) {

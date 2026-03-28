@@ -9,8 +9,13 @@ public record LineItem(
     boolean active,
     double bidCpm,
     double budget,
-    double spent
+    double spent,
+    LineItemTargeting targeting
 ) {
+  public LineItem {
+    targeting = targeting == null ? LineItemTargeting.none() : targeting;
+  }
+
   @JsonProperty("remainingBudget")
   public double remainingBudget() {
     return Math.max(0.0d, budget - spent);
@@ -21,6 +26,6 @@ public record LineItem(
   }
 
   public LineItem spend(double amount) {
-    return new LineItem(id, name, mediaType, active, bidCpm, budget, Math.min(budget, spent + amount));
+    return new LineItem(id, name, mediaType, active, bidCpm, budget, Math.min(budget, spent + amount), targeting);
   }
 }

@@ -13,6 +13,7 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.function.Predicate;
 
 public final class LineItemStore {
   private final ConcurrentHashMap<String, LineItem> lineItems = new ConcurrentHashMap<>();
@@ -30,7 +31,7 @@ public final class LineItemStore {
     load();
   }
 
-  public synchronized LineItem create(String name, MediaType mediaType, boolean active, double bidCpm, double budget) {
+  public synchronized LineItem create(String name, MediaType mediaType, boolean active, double bidCpm, double budget, LineItemTargeting targeting) {
     String normalizedName = name == null ? "" : name.trim();
     if (normalizedName.isBlank()) {
       throw new IllegalArgumentException("name is required");
@@ -45,7 +46,16 @@ public final class LineItemStore {
       throw new IllegalArgumentException("budget must be greater than 0");
     }
 
-    LineItem lineItem = new LineItem(UUID.randomUUID().toString(), normalizedName, mediaType, active, bidCpm, budget, 0.0d);
+    LineItem lineItem = new LineItem(
+        UUID.randomUUID().toString(),
+        normalizedName,
+        mediaType,
+        active,
+        bidCpm,
+        budget,
+        0.0d,
+        targeting == null ? LineItemTargeting.none() : targeting
+    );
     lineItems.put(lineItem.id(), lineItem);
     persist();
     return lineItem;
@@ -68,7 +78,7 @@ public final class LineItemStore {
     return deleted;
   }
 
-  public synchronized List<LineItem> reserveBids(MediaType mediaType, double floorCpm, int maxBids) {
+  public synchronized List<LineItem> reserveBids(MediaType mediaType, double floorCpm, int maxBids, Predicate<LineItem> matcher) {
     if (maxBids <= 0) {
       return List.of();
     }
@@ -78,6 +88,7 @@ public final class LineItemStore {
         .filter(lineItem -> lineItem.mediaType() == mediaType)
         .filter(lineItem -> lineItem.bidCpm() + 1e-9 >= floorCpm)
         .filter(lineItem -> lineItem.canAfford(lineItem.bidCpm()))
+        .filter(lineItem -> matcher == null || matcher.test(lineItem))
         .sorted(Comparator.comparing(LineItem::bidCpm).reversed().thenComparing(LineItem::name).thenComparing(LineItem::id))
         .limit(maxBids)
         .toList();

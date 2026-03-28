@@ -9,3 +9,4 @@ coverage/
 *.war
 *.ear
 *.log
+data/
