@@ -1,6 +1,6 @@
 # Kwidder
 
-Kwidder (Kwun's Bidder) is a Java demand-side platform (DSP) bidder focused on ingesting OpenRTB 2.6 bid requests and making deterministic bid or no-bid decisions. The scaffold is intentionally lean: a plain Java 21 HTTP service, Jackson-based request parsing, a pluggable bid engine, and tests that pin the current auction behavior.
+Kwidder (Kwun's Bidder) is a Java demand-side platform (DSP) bidder focused on ingesting OpenRTB 2.6 bid requests and making deterministic bid or no-bid decisions. Users can use the UI to setup line items and targeting.
 
 ## What this scaffold does
 
@@ -107,7 +107,7 @@ git push -u origin main
 
 ## Feature roadmap
 
-Here are 10 useful features to add next to make Kwidder feel more like a real bidder platform:
+Here are 10 useful features to add to make Kwidder a more full featured DSP:
 
 1. Video Ad Podding Support
 Handle pod-level decisioning for CTV and long-form video, including pod position, slot selection, and competitive separation.
@@ -118,23 +118,17 @@ Track spend caps, daily budgets, and pacing logic so Kwidder does not overspend.
 3. Domain and App Targeting
 Allow line items to target specific site domains, app bundles, publishers, or placement IDs.
 
-4. Geo Targeting
-Support country, region, city, and ZIP targeting using the device geo object.
-
-5. Device Targeting
-Let line items target mobile, desktop, CTV, operating systems, and browser families.
-
-6. Deal-Aware Bidding
+4. Deal-Aware Bidding
 Support PMP deal prioritization, preferred pricing, and deal-specific creatives.
 
-7. Creative Library
+5. Creative Library
 Manage multiple banner and video creatives per line item and choose the best creative dynamically.
 
-8. Frequency Capping
+6. Frequency Capping
 Limit how often the same user sees a campaign by using IDs like `user.id`, `buyeruid`, or `eids`.
 
-9. Win Notification and Impression Tracking
+7. Win Notification and Impression Tracking
 Add endpoints for `nurl`, impression logging, click tracking, and billing event capture.
 
-10. Analytics Dashboard
+8. Analytics Dashboard
 Show bid rate, no-bid reasons, win rate, spend, and per-line-item performance in the UI.
