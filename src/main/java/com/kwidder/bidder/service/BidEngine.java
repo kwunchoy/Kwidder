@@ -175,7 +175,10 @@ public final class BidEngine {
     if (targeting == null) {
       return true;
     }
-    return matchesDeviceType(targeting, request.device()) && matchesGeo(targeting, request);
+    return matchesDeviceType(targeting, request.device())
+        && matchesOperatingSystem(targeting, request.device())
+        && matchesBrowserFamily(targeting, request.device())
+        && matchesGeo(targeting, request);
   }
 
   private boolean matchesDeviceType(LineItemTargeting targeting, BidRequest.Device device) {
@@ -206,6 +209,26 @@ public final class BidEngine {
         && matchesTextFilter(targeting.zips(), geo.zip(), false);
   }
 
+  private boolean matchesOperatingSystem(LineItemTargeting targeting, BidRequest.Device device) {
+    if (!targeting.hasOperatingSystemFilters()) {
+      return true;
+    }
+    if (device == null) {
+      return false;
+    }
+    return matchesTextFilter(targeting.operatingSystems(), device.os(), false);
+  }
+
+  private boolean matchesBrowserFamily(LineItemTargeting targeting, BidRequest.Device device) {
+    if (!targeting.hasBrowserFamilyFilters()) {
+      return true;
+    }
+    if (device == null) {
+      return false;
+    }
+    return matchesTextFilter(targeting.browserFamilies(), browserFamily(device.ua()), false);
+  }
+
   private boolean matchesTextFilter(List<String> filters, String value, boolean uppercase) {
     if (filters == null || filters.isEmpty()) {
       return true;
@@ -217,6 +240,39 @@ public final class BidEngine {
         ? value.trim().toUpperCase(Locale.ROOT)
         : value.trim().toLowerCase(Locale.ROOT);
     return filters.stream().filter(Objects::nonNull).anyMatch(normalized::equals);
+  }
+
+  private String browserFamily(String userAgent) {
+    if (userAgent == null || userAgent.isBlank()) {
+      return null;
+    }
+
+    String ua = userAgent.toLowerCase(Locale.ROOT);
+    if (ua.contains("edg/") || ua.contains("edge/")) {
+      return "edge";
+    }
+    if (ua.contains("opr/") || ua.contains("opera")) {
+      return "opera";
+    }
+    if (ua.contains("samsungbrowser/")) {
+      return "samsung internet";
+    }
+    if (ua.contains("fxios/") || ua.contains("firefox/")) {
+      return "firefox";
+    }
+    if (ua.contains("msie") || ua.contains("trident/")) {
+      return "internet explorer";
+    }
+    if (ua.contains("wv") && ua.contains("chrome/")) {
+      return "android webview";
+    }
+    if (ua.contains("crios/") || ua.contains("chrome/") || ua.contains("chromium/")) {
+      return "chrome";
+    }
+    if (ua.contains("safari/") && ua.contains("version/")) {
+      return "safari";
+    }
+    return null;
   }
 
   private BannerSize bannerSize(BidRequest.Banner banner) {

@@ -10,8 +10,14 @@ public record LineItemTargeting(
     List<String> countries,
     List<String> regions,
     List<String> cities,
-    List<String> zips
+    List<String> zips,
+    List<String> operatingSystems,
+    List<String> browserFamilies
 ) {
+  public LineItemTargeting(List<Integer> deviceTypes, List<String> countries, List<String> regions, List<String> cities, List<String> zips) {
+    this(deviceTypes, countries, regions, cities, zips, List.of(), List.of());
+  }
+
   public LineItemTargeting {
     deviceTypes = deviceTypes == null ? List.of() : deviceTypes.stream()
         .filter(Objects::nonNull)
@@ -21,10 +27,12 @@ public record LineItemTargeting(
     regions = normalizeStrings(regions, false);
     cities = normalizeStrings(cities, false);
     zips = normalizeStrings(zips, false);
+    operatingSystems = normalizeStrings(operatingSystems, false);
+    browserFamilies = normalizeStrings(browserFamilies, false);
   }
 
   public static LineItemTargeting none() {
-    return new LineItemTargeting(List.of(), List.of(), List.of(), List.of(), List.of());
+    return new LineItemTargeting(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
   }
 
   public boolean hasDeviceTypeFilters() {
@@ -33,6 +41,14 @@ public record LineItemTargeting(
 
   public boolean hasGeoFilters() {
     return !countries.isEmpty() || !regions.isEmpty() || !cities.isEmpty() || !zips.isEmpty();
+  }
+
+  public boolean hasOperatingSystemFilters() {
+    return !operatingSystems.isEmpty();
+  }
+
+  public boolean hasBrowserFamilyFilters() {
+    return !browserFamilies.isEmpty();
   }
 
   private static List<String> normalizeStrings(List<String> values, boolean uppercase) {

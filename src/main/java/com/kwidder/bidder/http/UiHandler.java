@@ -356,6 +356,14 @@ public final class UiHandler implements HttpHandler {
                         ZIP Codes
                         <input id="line-item-zips" type="text" placeholder="90001, 10001">
                       </label>
+                      <label>
+                        Operating Systems
+                        <input id="line-item-operating-systems" type="text" placeholder="iOS, Android TV, Windows">
+                      </label>
+                      <label>
+                        Browser Families
+                        <input id="line-item-browser-families" type="text" placeholder="Chrome, Safari, Edge">
+                      </label>
                     </div>
                   </div>
                 </form>
@@ -520,6 +528,8 @@ public final class UiHandler implements HttpHandler {
           const lineItemRegions = document.getElementById("line-item-regions");
           const lineItemCities = document.getElementById("line-item-cities");
           const lineItemZips = document.getElementById("line-item-zips");
+          const lineItemOperatingSystems = document.getElementById("line-item-operating-systems");
+          const lineItemBrowserFamilies = document.getElementById("line-item-browser-families");
           const deviceTypeOptions = Array.from(document.querySelectorAll(".device-type-option"));
 
           function formatMoney(value) {
@@ -553,6 +563,12 @@ public final class UiHandler implements HttpHandler {
             }
             if ((targeting.zips ?? []).length) {
               parts.push(`ZIPs: ${(targeting.zips ?? []).join(", ")}`);
+            }
+            if ((targeting.operatingSystems ?? []).length) {
+              parts.push(`OS: ${(targeting.operatingSystems ?? []).join(", ")}`);
+            }
+            if ((targeting.browserFamilies ?? []).length) {
+              parts.push(`Browsers: ${(targeting.browserFamilies ?? []).join(", ")}`);
             }
             return parts.length ? parts.join(" | ") : "Any device, any geo";
           }
@@ -620,7 +636,9 @@ public final class UiHandler implements HttpHandler {
                 countries: parseCsv(lineItemCountries.value),
                 regions: parseCsv(lineItemRegions.value),
                 cities: parseCsv(lineItemCities.value),
-                zips: parseCsv(lineItemZips.value)
+                zips: parseCsv(lineItemZips.value),
+                operatingSystems: parseCsv(lineItemOperatingSystems.value),
+                browserFamilies: parseCsv(lineItemBrowserFamilies.value)
               }
             };
 

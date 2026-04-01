@@ -347,6 +347,56 @@ class BidEngineTest {
     assertNull(engine.evaluate(request));
   }
 
+  @Test
+  void returnsBidWhenOperatingSystemTargetingMatches() throws Exception {
+    LineItemStore lineItemStore = new LineItemStore();
+    lineItemStore.create(
+        "iOS Banner",
+        MediaType.BANNER,
+        true,
+        1.25d,
+        10.00d,
+        new LineItemTargeting(List.of(), List.of(), List.of(), List.of(), List.of(), List.of("iOS"), List.of())
+    );
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
+
+    BidRequest request = JsonSupport.mapper().readValue("""
+        {
+          "id": "request-os-match",
+          "imp": [{"id": "imp-1", "bidfloor": 1.0, "banner": {"w": 300, "h": 250}}],
+          "device": {"os": "iOS"}
+        }
+        """, BidRequest.class);
+
+    assertNotNull(engine.evaluate(request));
+  }
+
+  @Test
+  void returnsNoBidWhenBrowserFamilyTargetingDoesNotMatch() throws Exception {
+    LineItemStore lineItemStore = new LineItemStore();
+    lineItemStore.create(
+        "Safari Banner",
+        MediaType.BANNER,
+        true,
+        1.25d,
+        10.00d,
+        new LineItemTargeting(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of("Safari"))
+    );
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
+
+    BidRequest request = JsonSupport.mapper().readValue("""
+        {
+          "id": "request-browser-miss",
+          "imp": [{"id": "imp-1", "bidfloor": 1.0, "banner": {"w": 300, "h": 250}}],
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+          }
+        }
+        """, BidRequest.class);
+
+    assertNull(engine.evaluate(request));
+  }
+
   private BidRequest bannerRequest(String requestId, double bidFloor) {
     return new BidRequest(
         requestId,

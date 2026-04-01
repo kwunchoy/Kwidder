@@ -24,7 +24,15 @@ class LineItemStoreTest {
         true,
         1.25d,
         5.00d,
-        new LineItemTargeting(List.of(2), List.of("USA"), List.of("CA"), List.of("Los Angeles"), List.of("90001"))
+        new LineItemTargeting(
+            List.of(2),
+            List.of("USA"),
+            List.of("CA"),
+            List.of("Los Angeles"),
+            List.of("90001"),
+            List.of("iOS"),
+            List.of("Safari")
+        )
     );
     firstStore.reserveBids(MediaType.BANNER, 1.00d, 1, lineItem -> true);
 
@@ -44,5 +52,7 @@ class LineItemStoreTest {
     assertEquals(List.of("ca"), reloaded.targeting().regions());
     assertEquals(List.of("los angeles"), reloaded.targeting().cities());
     assertEquals(List.of("90001"), reloaded.targeting().zips());
+    assertEquals(List.of("ios"), reloaded.targeting().operatingSystems());
+    assertEquals(List.of("safari"), reloaded.targeting().browserFamilies());
   }
 }
