@@ -107,7 +107,7 @@ git push -u origin main
 
 ## Feature roadmap
 
-Here are 10 useful features to add to make Kwidder a more full featured DSP:
+Here are useful features to add to make Kwidder a more full featured DSP:
 
 1. Video Ad Podding Support
 Handle pod-level decisioning for CTV and long-form video, including pod position, slot selection, and competitive separation.
