@@ -364,6 +364,14 @@ public final class UiHandler implements HttpHandler {
                         Browser Families
                         <input id="line-item-browser-families" type="text" placeholder="Chrome, Safari, Edge">
                       </label>
+                      <label>
+                        Domains
+                        <input id="line-item-domains" type="text" placeholder="publisher.example, sportswire.example">
+                      </label>
+                      <label>
+                        App Bundles
+                        <input id="line-item-app-bundles" type="text" placeholder="com.streamarena.tv, com.example.app">
+                      </label>
                     </div>
                   </div>
                 </form>
@@ -399,7 +407,7 @@ public final class UiHandler implements HttpHandler {
           </section>
 
           <div class="foot">
-            Kwidder will only bid when a matching active line item has enough remaining budget, clears the request floor, and matches any device type or geo targeting filters you set.
+            Kwidder will only bid when a matching active line item has enough remaining budget, clears the request floor, and matches any device, OS, browser, geo, domain, or app targeting filters you set.
           </div>
         </div>
 
@@ -530,6 +538,8 @@ public final class UiHandler implements HttpHandler {
           const lineItemZips = document.getElementById("line-item-zips");
           const lineItemOperatingSystems = document.getElementById("line-item-operating-systems");
           const lineItemBrowserFamilies = document.getElementById("line-item-browser-families");
+          const lineItemDomains = document.getElementById("line-item-domains");
+          const lineItemAppBundles = document.getElementById("line-item-app-bundles");
           const deviceTypeOptions = Array.from(document.querySelectorAll(".device-type-option"));
 
           function formatMoney(value) {
@@ -569,6 +579,12 @@ public final class UiHandler implements HttpHandler {
             }
             if ((targeting.browserFamilies ?? []).length) {
               parts.push(`Browsers: ${(targeting.browserFamilies ?? []).join(", ")}`);
+            }
+            if ((targeting.domains ?? []).length) {
+              parts.push(`Domains: ${(targeting.domains ?? []).join(", ")}`);
+            }
+            if ((targeting.appBundles ?? []).length) {
+              parts.push(`Apps: ${(targeting.appBundles ?? []).join(", ")}`);
             }
             return parts.length ? parts.join(" | ") : "Any device, any geo";
           }
@@ -638,7 +654,9 @@ public final class UiHandler implements HttpHandler {
                 cities: parseCsv(lineItemCities.value),
                 zips: parseCsv(lineItemZips.value),
                 operatingSystems: parseCsv(lineItemOperatingSystems.value),
-                browserFamilies: parseCsv(lineItemBrowserFamilies.value)
+                browserFamilies: parseCsv(lineItemBrowserFamilies.value),
+                domains: parseCsv(lineItemDomains.value),
+                appBundles: parseCsv(lineItemAppBundles.value)
               }
             };
 

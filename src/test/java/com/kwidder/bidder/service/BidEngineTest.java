@@ -397,6 +397,54 @@ class BidEngineTest {
     assertNull(engine.evaluate(request));
   }
 
+  @Test
+  void returnsBidWhenDomainTargetingMatches() throws Exception {
+    LineItemStore lineItemStore = new LineItemStore();
+    lineItemStore.create(
+        "Sports Domain Banner",
+        MediaType.BANNER,
+        true,
+        1.25d,
+        10.00d,
+        new LineItemTargeting(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of("sportswire.example"), List.of())
+    );
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
+
+    BidRequest request = JsonSupport.mapper().readValue("""
+        {
+          "id": "request-domain-match",
+          "imp": [{"id": "imp-1", "bidfloor": 1.0, "banner": {"w": 300, "h": 250}}],
+          "site": {"domain": "sportswire.example"}
+        }
+        """, BidRequest.class);
+
+    assertNotNull(engine.evaluate(request));
+  }
+
+  @Test
+  void returnsBidWhenAppBundleTargetingMatches() throws Exception {
+    LineItemStore lineItemStore = new LineItemStore();
+    lineItemStore.create(
+        "CTV App Banner",
+        MediaType.BANNER,
+        true,
+        1.25d,
+        10.00d,
+        new LineItemTargeting(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of("com.streamarena.tv"))
+    );
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
+
+    BidRequest request = JsonSupport.mapper().readValue("""
+        {
+          "id": "request-app-match",
+          "imp": [{"id": "imp-1", "bidfloor": 1.0, "banner": {"w": 300, "h": 250}}],
+          "app": {"bundle": "com.streamarena.tv"}
+        }
+        """, BidRequest.class);
+
+    assertNotNull(engine.evaluate(request));
+  }
+
   private BidRequest bannerRequest(String requestId, double bidFloor) {
     return new BidRequest(
         requestId,

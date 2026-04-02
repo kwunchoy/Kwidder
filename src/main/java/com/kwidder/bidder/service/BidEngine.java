@@ -178,6 +178,7 @@ public final class BidEngine {
     return matchesDeviceType(targeting, request.device())
         && matchesOperatingSystem(targeting, request.device())
         && matchesBrowserFamily(targeting, request.device())
+        && matchesInventoryTargeting(targeting, request)
         && matchesGeo(targeting, request);
   }
 
@@ -207,6 +208,37 @@ public final class BidEngine {
         && matchesTextFilter(targeting.regions(), geo.region(), false)
         && matchesTextFilter(targeting.cities(), geo.city(), false)
         && matchesTextFilter(targeting.zips(), geo.zip(), false);
+  }
+
+  private boolean matchesInventoryTargeting(LineItemTargeting targeting, BidRequest request) {
+    boolean hasDomainFilters = targeting.hasDomainFilters();
+    boolean hasAppBundleFilters = targeting.hasAppBundleFilters();
+    boolean hasSite = request.site() != null;
+    boolean hasApp = request.app() != null;
+
+    if (!hasSite && !hasApp) {
+      return !hasDomainFilters && !hasAppBundleFilters;
+    }
+
+    if (hasSite) {
+      if (hasDomainFilters && !matchesTextFilter(targeting.domains(), request.site().domain(), false)) {
+        return false;
+      }
+      if (hasAppBundleFilters && !hasDomainFilters) {
+        return false;
+      }
+    }
+
+    if (hasApp) {
+      if (hasAppBundleFilters && !matchesTextFilter(targeting.appBundles(), request.app().bundle(), false)) {
+        return false;
+      }
+      if (hasDomainFilters && !hasAppBundleFilters) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   private boolean matchesOperatingSystem(LineItemTargeting targeting, BidRequest.Device device) {
