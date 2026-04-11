@@ -112,23 +112,20 @@ Here are useful features to add to make Kwidder a more full featured DSP:
 1. Video Ad Podding Support
 Handle pod-level decisioning for CTV and long-form video, including pod position, slot selection, and competitive separation.
 
-2. Campaign Budgets and Pacing
-Track spend caps, daily budgets, and pacing logic so Kwidder does not overspend.
+2. Campaign-Level Budgets and Pacing
+Add campaign-level spend caps, daily budgets, and pacing logic on top of the existing line-item budget controls.
 
-3. Domain and App Targeting
-Allow line items to target specific site domains, app bundles, publishers, or placement IDs.
-
-4. Deal-Aware Bidding
+3. Deal-Aware Bidding
 Support PMP deal prioritization, preferred pricing, and deal-specific creatives.
 
-5. Creative Library
+4. Creative Library
 Manage multiple banner and video creatives per line item and choose the best creative dynamically.
 
-6. Frequency Capping
+5. Frequency Capping
 Limit how often the same user sees a campaign by using IDs like `user.id`, `buyeruid`, or `eids`.
 
-7. Win Notification and Impression Tracking
+6. Win Notification and Impression Tracking
 Add endpoints for `nurl`, impression logging, click tracking, and billing event capture.
 
-8. Analytics Dashboard
+7. Analytics Dashboard
 Show bid rate, no-bid reasons, win rate, spend, and per-line-item performance in the UI.
