@@ -34,7 +34,7 @@ The first implementation is intentionally conservative so we have something pred
 - Each line item sets its own bid CPM and total budget
 - Kwidder spends line item budget on every bid response it returns, and stops bidding once that budget is exhausted
 - Line items, budgets, and spent amounts persist across Kwidder restarts in a local JSON store
-- Line items can target device types, operating systems, browser families, exact-match geo filters for country, region, city, and ZIP, plus site domains and app bundles
+- Line items can target device types, operating systems, browser families, exact-match geo filters for country, region, city, and ZIP, plus site domains, app bundles, and deal IDs
 - By default Kwidder returns one bid per impression, but a request can opt into multiple bids through `ext.kwidder.allow_multiple_bids` and `ext.kwidder.max_bids`
 - Requests with no impressions are rejected as invalid
 - If the publisher blocks our advertiser domain via `badv`, we do not bid
@@ -54,7 +54,7 @@ mvn exec:java
 The service reads configuration from environment variables. A starter `.env.example` is included.
 By default, line items are stored in `data/line-items.json`. You can change that with `KWIDDER_LINE_ITEM_STORE_PATH`.
 
-Then open `http://localhost:8080/ui` to create line items with media type, bid CPM, budget, device type targeting, operating system targeting, browser family targeting, geo targeting, domain targeting, and app bundle targeting, paste a bid request, and inspect Kwidder's response in the browser.
+Then open `http://localhost:8080/ui` to create line items with media type, bid CPM, budget, device type targeting, operating system targeting, browser family targeting, geo targeting, domain targeting, app bundle targeting, and deal ID targeting, paste a bid request, and inspect Kwidder's response in the browser.
 
 To let one impression return multiple bids, include this request extension:
 
@@ -115,17 +115,14 @@ Handle pod-level decisioning for CTV and long-form video, including pod position
 2. Campaign-Level Budgets and Pacing
 Add campaign-level spend caps, daily budgets, and pacing logic on top of the existing line-item budget controls.
 
-3. Deal-Aware Bidding
-Support PMP deal prioritization, preferred pricing, and deal-specific creatives.
-
-4. Creative Library
+3. Creative Library
 Manage multiple banner and video creatives per line item and choose the best creative dynamically.
 
-5. Frequency Capping
+4. Frequency Capping
 Limit how often the same user sees a campaign by using IDs like `user.id`, `buyeruid`, or `eids`.
 
-6. Win Notification and Impression Tracking
+5. Win Notification and Impression Tracking
 Add endpoints for `nurl`, impression logging, click tracking, and billing event capture.
 
-7. Analytics Dashboard
+6. Analytics Dashboard
 Show bid rate, no-bid reasons, win rate, spend, and per-line-item performance in the UI.

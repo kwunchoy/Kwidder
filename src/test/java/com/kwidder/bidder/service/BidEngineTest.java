@@ -406,7 +406,7 @@ class BidEngineTest {
         true,
         1.25d,
         10.00d,
-        new LineItemTargeting(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of("sportswire.example"), List.of())
+        new LineItemTargeting(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of("sportswire.example"), List.of(), List.of())
     );
     BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
 
@@ -430,7 +430,7 @@ class BidEngineTest {
         true,
         1.25d,
         10.00d,
-        new LineItemTargeting(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of("com.streamarena.tv"))
+        new LineItemTargeting(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of("com.streamarena.tv"), List.of())
     );
     BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
 
@@ -443,6 +443,72 @@ class BidEngineTest {
         """, BidRequest.class);
 
     assertNotNull(engine.evaluate(request));
+  }
+
+  @Test
+  void returnsBidWhenDealIdTargetingMatches() throws Exception {
+    LineItemStore lineItemStore = new LineItemStore();
+    lineItemStore.create(
+        "Deal Banner",
+        MediaType.BANNER,
+        true,
+        1.25d,
+        10.00d,
+        new LineItemTargeting(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of("deal-123"))
+    );
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
+
+    BidRequest request = JsonSupport.mapper().readValue("""
+        {
+          "id": "request-deal-match",
+          "imp": [
+            {
+              "id": "imp-1",
+              "bidfloor": 1.0,
+              "banner": {"w": 300, "h": 250},
+              "pmp": {
+                "private_auction": 0,
+                "deals": [{"id": "deal-123", "bidfloor": 1.0, "wseat": ["kwidder"], "wadomain": ["ads.kwidder.dev"]}]
+              }
+            }
+          ]
+        }
+        """, BidRequest.class);
+
+    assertNotNull(engine.evaluate(request));
+  }
+
+  @Test
+  void returnsNoBidWhenDealIdTargetingDoesNotMatch() throws Exception {
+    LineItemStore lineItemStore = new LineItemStore();
+    lineItemStore.create(
+        "Deal Banner",
+        MediaType.BANNER,
+        true,
+        1.25d,
+        10.00d,
+        new LineItemTargeting(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of("deal-999"))
+    );
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
+
+    BidRequest request = JsonSupport.mapper().readValue("""
+        {
+          "id": "request-deal-miss",
+          "imp": [
+            {
+              "id": "imp-1",
+              "bidfloor": 1.0,
+              "banner": {"w": 300, "h": 250},
+              "pmp": {
+                "private_auction": 0,
+                "deals": [{"id": "deal-123", "bidfloor": 1.0, "wseat": ["kwidder"], "wadomain": ["ads.kwidder.dev"]}]
+              }
+            }
+          ]
+        }
+        """, BidRequest.class);
+
+    assertNull(engine.evaluate(request));
   }
 
   private BidRequest bannerRequest(String requestId, double bidFloor) {

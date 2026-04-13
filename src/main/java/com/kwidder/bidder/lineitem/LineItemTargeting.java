@@ -14,10 +14,11 @@ public record LineItemTargeting(
     List<String> operatingSystems,
     List<String> browserFamilies,
     List<String> domains,
-    List<String> appBundles
+    List<String> appBundles,
+    List<String> dealIds
 ) {
   public LineItemTargeting(List<Integer> deviceTypes, List<String> countries, List<String> regions, List<String> cities, List<String> zips) {
-    this(deviceTypes, countries, regions, cities, zips, List.of(), List.of(), List.of(), List.of());
+    this(deviceTypes, countries, regions, cities, zips, List.of(), List.of(), List.of(), List.of(), List.of());
   }
 
   public LineItemTargeting(
@@ -29,7 +30,7 @@ public record LineItemTargeting(
       List<String> operatingSystems,
       List<String> browserFamilies
   ) {
-    this(deviceTypes, countries, regions, cities, zips, operatingSystems, browserFamilies, List.of(), List.of());
+    this(deviceTypes, countries, regions, cities, zips, operatingSystems, browserFamilies, List.of(), List.of(), List.of());
   }
 
   public LineItemTargeting {
@@ -45,10 +46,11 @@ public record LineItemTargeting(
     browserFamilies = normalizeStrings(browserFamilies, false);
     domains = normalizeStrings(domains, false);
     appBundles = normalizeStrings(appBundles, false);
+    dealIds = normalizeStrings(dealIds, false);
   }
 
   public static LineItemTargeting none() {
-    return new LineItemTargeting(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+    return new LineItemTargeting(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
   }
 
   public boolean hasDeviceTypeFilters() {
@@ -73,6 +75,10 @@ public record LineItemTargeting(
 
   public boolean hasAppBundleFilters() {
     return !appBundles.isEmpty();
+  }
+
+  public boolean hasDealIdFilters() {
+    return !dealIds.isEmpty();
   }
 
   private static List<String> normalizeStrings(List<String> values, boolean uppercase) {

@@ -175,10 +175,12 @@ public final class BidEngine {
     if (targeting == null) {
       return true;
     }
+    EligibleDeal eligibleDeal = eligibleDealForTargeting(request);
     return matchesDeviceType(targeting, request.device())
         && matchesOperatingSystem(targeting, request.device())
         && matchesBrowserFamily(targeting, request.device())
         && matchesInventoryTargeting(targeting, request)
+        && matchesDealId(targeting, eligibleDeal)
         && matchesGeo(targeting, request);
   }
 
@@ -239,6 +241,16 @@ public final class BidEngine {
     }
 
     return true;
+  }
+
+  private boolean matchesDealId(LineItemTargeting targeting, EligibleDeal eligibleDeal) {
+    if (!targeting.hasDealIdFilters()) {
+      return true;
+    }
+    if (eligibleDeal == null || eligibleDeal.id() == null || eligibleDeal.id().isBlank()) {
+      return false;
+    }
+    return matchesTextFilter(targeting.dealIds(), eligibleDeal.id(), false);
   }
 
   private boolean matchesOperatingSystem(LineItemTargeting targeting, BidRequest.Device device) {
@@ -368,6 +380,19 @@ public final class BidEngine {
       return new EligibleDeal(deal.id(), deal.bidfloor(), deal.durfloors());
     }
 
+    return null;
+  }
+
+  private EligibleDeal eligibleDealForTargeting(BidRequest request) {
+    if (request == null || request.imp() == null) {
+      return null;
+    }
+    for (BidRequest.Imp imp : request.imp()) {
+      EligibleDeal eligibleDeal = eligibleDeal(imp);
+      if (eligibleDeal != null) {
+        return eligibleDeal;
+      }
+    }
     return null;
   }
 

@@ -33,7 +33,8 @@ class LineItemStoreTest {
             List.of("iOS"),
             List.of("Safari"),
             List.of("sportswire.example"),
-            List.of("com.streamarena.tv")
+            List.of("com.streamarena.tv"),
+            List.of("deal-123")
         )
     );
     firstStore.reserveBids(MediaType.BANNER, 1.00d, 1, lineItem -> true);
@@ -58,5 +59,6 @@ class LineItemStoreTest {
     assertEquals(List.of("safari"), reloaded.targeting().browserFamilies());
     assertEquals(List.of("sportswire.example"), reloaded.targeting().domains());
     assertEquals(List.of("com.streamarena.tv"), reloaded.targeting().appBundles());
+    assertEquals(List.of("deal-123"), reloaded.targeting().dealIds());
   }
 }

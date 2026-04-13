@@ -372,6 +372,10 @@ public final class UiHandler implements HttpHandler {
                         App Bundles
                         <input id="line-item-app-bundles" type="text" placeholder="com.streamarena.tv, com.example.app">
                       </label>
+                      <label>
+                        Deal IDs
+                        <input id="line-item-deal-ids" type="text" placeholder="deal-123, deal-premium-001">
+                      </label>
                     </div>
                   </div>
                 </form>
@@ -540,6 +544,7 @@ public final class UiHandler implements HttpHandler {
           const lineItemBrowserFamilies = document.getElementById("line-item-browser-families");
           const lineItemDomains = document.getElementById("line-item-domains");
           const lineItemAppBundles = document.getElementById("line-item-app-bundles");
+          const lineItemDealIds = document.getElementById("line-item-deal-ids");
           const deviceTypeOptions = Array.from(document.querySelectorAll(".device-type-option"));
 
           function formatMoney(value) {
@@ -585,6 +590,9 @@ public final class UiHandler implements HttpHandler {
             }
             if ((targeting.appBundles ?? []).length) {
               parts.push(`Apps: ${(targeting.appBundles ?? []).join(", ")}`);
+            }
+            if ((targeting.dealIds ?? []).length) {
+              parts.push(`Deals: ${(targeting.dealIds ?? []).join(", ")}`);
             }
             return parts.length ? parts.join(" | ") : "Any device, any geo";
           }
@@ -656,7 +664,8 @@ public final class UiHandler implements HttpHandler {
                 operatingSystems: parseCsv(lineItemOperatingSystems.value),
                 browserFamilies: parseCsv(lineItemBrowserFamilies.value),
                 domains: parseCsv(lineItemDomains.value),
-                appBundles: parseCsv(lineItemAppBundles.value)
+                appBundles: parseCsv(lineItemAppBundles.value),
+                dealIds: parseCsv(lineItemDealIds.value)
               }
             };
 
