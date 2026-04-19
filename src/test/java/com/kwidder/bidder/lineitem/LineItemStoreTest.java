@@ -3,6 +3,9 @@ package com.kwidder.bidder.lineitem;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.kwidder.bidder.http.JsonSupport;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -16,12 +19,15 @@ class LineItemStoreTest {
   @Test
   void persistsLineItemsAndSpentAmountsAcrossStoreRestarts() throws Exception {
     Path storagePath = tempDir.resolve("line-items.json");
+    Clock fixedClock = Clock.fixed(Instant.parse("2026-04-19T12:00:00Z"), ZoneOffset.UTC);
 
-    LineItemStore firstStore = new LineItemStore(storagePath, JsonSupport.mapper());
+    LineItemStore firstStore = new LineItemStore(storagePath, JsonSupport.mapper(), fixedClock);
     LineItem created = firstStore.create(
         "Banner Durable",
         MediaType.BANNER,
         true,
+        "2026-04-01",
+        "2026-04-30",
         1.25d,
         5.00d,
         new LineItemTargeting(
@@ -39,13 +45,15 @@ class LineItemStoreTest {
     );
     firstStore.reserveBids(MediaType.BANNER, 1.00d, 1, lineItem -> true);
 
-    LineItemStore secondStore = new LineItemStore(storagePath, JsonSupport.mapper());
+    LineItemStore secondStore = new LineItemStore(storagePath, JsonSupport.mapper(), fixedClock);
 
     assertEquals(true, Files.exists(storagePath));
     assertEquals(1, secondStore.list().size());
     LineItem reloaded = secondStore.list().get(0);
     assertEquals(created.id(), reloaded.id());
     assertEquals("Banner Durable", reloaded.name());
+    assertEquals("2026-04-01", reloaded.startDate());
+    assertEquals("2026-04-30", reloaded.endDate());
     assertEquals(1.25d, reloaded.bidCpm());
     assertEquals(5.00d, reloaded.budget());
     assertEquals(1.25d, reloaded.spent());
@@ -60,5 +68,18 @@ class LineItemStoreTest {
     assertEquals(List.of("sportswire.example"), reloaded.targeting().domains());
     assertEquals(List.of("com.streamarena.tv"), reloaded.targeting().appBundles());
     assertEquals(List.of("deal-123"), reloaded.targeting().dealIds());
+  }
+
+  @Test
+  void automaticallyTurnsExpiredActiveLineItemInactive() throws Exception {
+    Path storagePath = tempDir.resolve("expired-line-items.json");
+    Clock fixedClock = Clock.fixed(Instant.parse("2026-04-19T12:00:00Z"), ZoneOffset.UTC);
+
+    LineItemStore store = new LineItemStore(storagePath, JsonSupport.mapper(), fixedClock);
+    store.create("Expired Banner", MediaType.BANNER, true, "2026-04-01", "2026-04-10", 1.25d, 5.00d, LineItemTargeting.none());
+
+    LineItem reloaded = store.list().get(0);
+
+    assertEquals(false, reloaded.active());
   }
 }

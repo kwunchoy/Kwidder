@@ -511,6 +511,25 @@ class BidEngineTest {
     assertNull(engine.evaluate(request));
   }
 
+  @Test
+  void returnsNoBidWhenLineItemStartDateIsInTheFuture() {
+    LineItemStore lineItemStore = new LineItemStore();
+    lineItemStore.create("Future Banner", MediaType.BANNER, true, "2026-04-20", null, 1.25d, 10.00d, LineItemTargeting.none());
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
+
+    assertNull(engine.evaluate(bannerRequest("request-future-1", 1.00d)));
+  }
+
+  @Test
+  void returnsNoBidWhenLineItemEndDateIsInThePast() {
+    LineItemStore lineItemStore = new LineItemStore();
+    lineItemStore.create("Expired Banner", MediaType.BANNER, true, "2026-04-01", "2026-04-11", 1.25d, 10.00d, LineItemTargeting.none());
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
+
+    assertNull(engine.evaluate(bannerRequest("request-expired-1", 1.00d)));
+    assertEquals(false, lineItemStore.list().get(0).active());
+  }
+
   private BidRequest bannerRequest(String requestId, double bidFloor) {
     return new BidRequest(
         requestId,

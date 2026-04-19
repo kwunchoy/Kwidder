@@ -48,7 +48,16 @@ public final class LineItemHandler implements HttpHandler {
     double bidCpm = request.bidCpm() == null ? 0.0d : request.bidCpm();
     double budget = request.budget() == null ? 0.0d : request.budget();
     LineItemTargeting targeting = request.targeting() == null ? LineItemTargeting.none() : request.targeting();
-    LineItem lineItem = lineItemStore.create(request.name(), mediaType, active, bidCpm, budget, targeting);
+    LineItem lineItem = lineItemStore.create(
+        request.name(),
+        mediaType,
+        active,
+        request.startDate(),
+        request.endDate(),
+        bidCpm,
+        budget,
+        targeting
+    );
     HttpResponses.writeJson(exchange, 201, lineItem, mapper);
   }
 

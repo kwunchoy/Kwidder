@@ -183,7 +183,7 @@ public final class UiHandler implements HttpHandler {
           }
           .row {
             display: grid;
-            grid-template-columns: 1.2fr .8fr .7fr .7fr auto;
+            grid-template-columns: 1.05fr .8fr .7fr .7fr .8fr .8fr auto;
             gap: 12px;
             align-items: end;
           }
@@ -322,11 +322,19 @@ public final class UiHandler implements HttpHandler {
                       Budget
                       <input id="line-item-budget" type="number" min="0.01" step="0.01" value="25.00">
                     </label>
+                    <label>
+                      Start Date
+                      <input id="line-item-start-date" type="date">
+                    </label>
+                    <label>
+                      End Date
+                      <input id="line-item-end-date" type="date">
+                    </label>
                     <button class="primary" type="submit">Create Line Item</button>
                   </div>
                   <label class="checkbox">
                     <input id="line-item-active" type="checkbox" checked>
-                    Start active
+                    Active
                   </label>
                   <div class="targeting">
                     <div class="targeting-title">Targeting</div>
@@ -411,7 +419,7 @@ public final class UiHandler implements HttpHandler {
           </section>
 
           <div class="foot">
-            Kwidder will only bid when a matching active line item has enough remaining budget, clears the request floor, and matches any device, OS, browser, geo, domain, or app targeting filters you set.
+            Kwidder will only bid when a matching active line item is within its flight dates, has enough remaining budget, clears the request floor, and matches any device, OS, browser, geo, domain, app, or deal targeting filters you set.
           </div>
         </div>
 
@@ -535,6 +543,8 @@ public final class UiHandler implements HttpHandler {
           const lineItemMediaType = document.getElementById("line-item-media-type");
           const lineItemBidCpm = document.getElementById("line-item-bid-cpm");
           const lineItemBudget = document.getElementById("line-item-budget");
+          const lineItemStartDate = document.getElementById("line-item-start-date");
+          const lineItemEndDate = document.getElementById("line-item-end-date");
           const lineItemActive = document.getElementById("line-item-active");
           const lineItemCountries = document.getElementById("line-item-countries");
           const lineItemRegions = document.getElementById("line-item-regions");
@@ -630,10 +640,11 @@ public final class UiHandler implements HttpHandler {
                 </div>
                 <div class="line-item-meta">
                   <span class="pill">${lineItem.mediaType}</span>
-                  <span class="pill">${lineItem.active ? "ACTIVE" : "PAUSED"}</span>
+                  <span class="pill">${lineItem.active ? "ACTIVE" : "INACTIVE"}</span>
                 </div>
                 <div>Bid CPM: <strong>$${formatMoney(lineItem.bidCpm)}</strong></div>
                 <div>Budget: $${formatMoney(lineItem.budget)} | Spent: $${formatMoney(lineItem.spent)} | Remaining: $${formatMoney(lineItem.remainingBudget)}</div>
+                <div>Flight: ${lineItem.startDate ?? "No start"} -> ${lineItem.endDate ?? "No end"}</div>
                 <div>Targeting: ${targetingSummary(lineItem.targeting)}</div>
                 <div><code>${lineItem.id}</code></div>
               `;
@@ -653,6 +664,8 @@ public final class UiHandler implements HttpHandler {
               name: lineItemName.value,
               mediaType: lineItemMediaType.value,
               active: lineItemActive.checked,
+              startDate: lineItemStartDate.value || null,
+              endDate: lineItemEndDate.value || null,
               bidCpm: Number(lineItemBidCpm.value),
               budget: Number(lineItemBudget.value),
               targeting: {

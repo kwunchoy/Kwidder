@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -19,19 +22,39 @@ public final class LineItemStore {
   private final ConcurrentHashMap<String, LineItem> lineItems = new ConcurrentHashMap<>();
   private final Path storagePath;
   private final ObjectMapper mapper;
+  private final Clock clock;
 
   public LineItemStore() {
     this.storagePath = null;
     this.mapper = null;
+    this.clock = Clock.systemDefaultZone();
   }
 
   public LineItemStore(Path storagePath, ObjectMapper mapper) throws IOException {
+    this(storagePath, mapper, Clock.systemDefaultZone());
+  }
+
+  public LineItemStore(Path storagePath, ObjectMapper mapper, Clock clock) throws IOException {
     this.storagePath = storagePath;
     this.mapper = mapper;
+    this.clock = clock;
     load();
   }
 
   public synchronized LineItem create(String name, MediaType mediaType, boolean active, double bidCpm, double budget, LineItemTargeting targeting) {
+    return create(name, mediaType, active, null, null, bidCpm, budget, targeting);
+  }
+
+  public synchronized LineItem create(
+      String name,
+      MediaType mediaType,
+      boolean active,
+      String startDate,
+      String endDate,
+      double bidCpm,
+      double budget,
+      LineItemTargeting targeting
+  ) {
     String normalizedName = name == null ? "" : name.trim();
     if (normalizedName.isBlank()) {
       throw new IllegalArgumentException("name is required");
@@ -45,23 +68,31 @@ public final class LineItemStore {
     if (!Double.isFinite(budget) || budget <= 0.0d) {
       throw new IllegalArgumentException("budget must be greater than 0");
     }
+    LocalDate parsedStartDate = parseDate(startDate, "startDate");
+    LocalDate parsedEndDate = parseDate(endDate, "endDate");
+    if (parsedStartDate != null && parsedEndDate != null && parsedEndDate.isBefore(parsedStartDate)) {
+      throw new IllegalArgumentException("endDate must be on or after startDate");
+    }
 
-    LineItem lineItem = new LineItem(
+    LineItem lineItem = normalizeLineItemState(new LineItem(
         UUID.randomUUID().toString(),
         normalizedName,
         mediaType,
         active,
+        normalizedDate(parsedStartDate),
+        normalizedDate(parsedEndDate),
         bidCpm,
         budget,
         0.0d,
         targeting == null ? LineItemTargeting.none() : targeting
-    );
+    ));
     lineItems.put(lineItem.id(), lineItem);
     persist();
     return lineItem;
   }
 
   public List<LineItem> list() {
+    refreshExpiredLineItems();
     return lineItems.values().stream()
         .sorted(Comparator.comparing(LineItem::name).thenComparing(LineItem::id))
         .toList();
@@ -82,9 +113,10 @@ public final class LineItemStore {
     if (maxBids <= 0) {
       return List.of();
     }
+    refreshExpiredLineItems();
 
     List<LineItem> selected = new ArrayList<>(lineItems.values()).stream()
-        .filter(LineItem::active)
+        .filter(lineItem -> lineItem.isServingOn(LocalDate.now(clock)))
         .filter(lineItem -> lineItem.mediaType() == mediaType)
         .filter(lineItem -> lineItem.bidCpm() + 1e-9 >= floorCpm)
         .filter(lineItem -> lineItem.canAfford(lineItem.bidCpm()))
@@ -120,9 +152,49 @@ public final class LineItemStore {
 
     for (LineItem lineItem : storedLineItems.lineItems()) {
       if (lineItem != null && lineItem.id() != null && !lineItem.id().isBlank()) {
-        lineItems.put(lineItem.id(), lineItem);
+        lineItems.put(lineItem.id(), normalizeLineItemState(lineItem));
       }
     }
+    refreshExpiredLineItems();
+  }
+
+  private void refreshExpiredLineItems() {
+    boolean changed = false;
+    for (LineItem lineItem : new ArrayList<>(lineItems.values())) {
+      LineItem normalized = normalizeLineItemState(lineItem);
+      if (!normalized.equals(lineItem)) {
+        lineItems.put(normalized.id(), normalized);
+        changed = true;
+      }
+    }
+    if (changed) {
+      persist();
+    }
+  }
+
+  private LineItem normalizeLineItemState(LineItem lineItem) {
+    if (lineItem == null) {
+      return null;
+    }
+    if (lineItem.active() && lineItem.hasEnded(LocalDate.now(clock))) {
+      return lineItem.inactive();
+    }
+    return lineItem;
+  }
+
+  private LocalDate parseDate(String value, String fieldName) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    try {
+      return LocalDate.parse(value);
+    } catch (DateTimeParseException error) {
+      throw new IllegalArgumentException(fieldName + " must be in YYYY-MM-DD format");
+    }
+  }
+
+  private String normalizedDate(LocalDate value) {
+    return value == null ? null : value.toString();
   }
 
   private void persist() {
