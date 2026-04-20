@@ -14,6 +14,9 @@ public record LineItem(
     double bidCpm,
     double budget,
     double spent,
+    Double dailyBudget,
+    double dailySpent,
+    String dailySpentDate,
     LineItemTargeting targeting
 ) {
   public LineItem(
@@ -26,7 +29,7 @@ public record LineItem(
       double spent,
       LineItemTargeting targeting
   ) {
-    this(id, name, mediaType, active, null, null, bidCpm, budget, spent, targeting);
+    this(id, name, mediaType, active, null, null, bidCpm, budget, spent, null, 0.0d, null, targeting);
   }
 
   public LineItem {
@@ -38,8 +41,19 @@ public record LineItem(
     return Math.max(0.0d, budget - spent);
   }
 
+  @JsonProperty("remainingDailyBudget")
+  public Double remainingDailyBudget() {
+    if (dailyBudget == null) {
+      return null;
+    }
+    return Math.max(0.0d, dailyBudget - dailySpent);
+  }
+
   public boolean canAfford(double amount) {
-    return remainingBudget() + 1e-9 >= amount;
+    if (remainingBudget() + 1e-9 < amount) {
+      return false;
+    }
+    return dailyBudget == null || remainingDailyBudget() + 1e-9 >= amount;
   }
 
   public boolean hasStarted(LocalDate today) {
@@ -57,11 +71,38 @@ public record LineItem(
   }
 
   public LineItem inactive() {
-    return new LineItem(id, name, mediaType, false, startDate, endDate, bidCpm, budget, spent, targeting);
+    return new LineItem(id, name, mediaType, false, startDate, endDate, bidCpm, budget, spent, dailyBudget, dailySpent, dailySpentDate, targeting);
   }
 
-  public LineItem spend(double amount) {
-    return new LineItem(id, name, mediaType, active, startDate, endDate, bidCpm, budget, Math.min(budget, spent + amount), targeting);
+  public LineItem normalizedForDate(LocalDate today) {
+    String normalizedToday = today == null ? null : today.toString();
+    if (normalizedToday == null || normalizedToday.equals(dailySpentDate)) {
+      return this;
+    }
+    return new LineItem(id, name, mediaType, active, startDate, endDate, bidCpm, budget, spent, dailyBudget, 0.0d, normalizedToday, targeting);
+  }
+
+  public LineItem spend(double amount, LocalDate today) {
+    LineItem current = normalizedForDate(today);
+    double nextSpent = Math.min(budget, current.spent + amount);
+    double nextDailySpent = current.dailyBudget == null
+        ? current.dailySpent + amount
+        : Math.min(current.dailyBudget, current.dailySpent + amount);
+    return new LineItem(
+        id,
+        name,
+        mediaType,
+        active,
+        startDate,
+        endDate,
+        bidCpm,
+        budget,
+        nextSpent,
+        dailyBudget,
+        nextDailySpent,
+        current.dailySpentDate,
+        targeting
+    );
   }
 
   private LocalDate parsedDate(String value) {

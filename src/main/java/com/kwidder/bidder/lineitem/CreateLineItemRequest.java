@@ -8,6 +8,7 @@ public record CreateLineItemRequest(
     String endDate,
     Double bidCpm,
     Double budget,
+    Double dailyBudget,
     LineItemTargeting targeting
 ) {
 }

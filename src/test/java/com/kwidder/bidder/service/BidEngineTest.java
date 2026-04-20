@@ -10,6 +10,9 @@ import com.kwidder.bidder.lineitem.LineItemStore;
 import com.kwidder.bidder.lineitem.LineItemTargeting;
 import com.kwidder.bidder.lineitem.MediaType;
 import com.kwidder.bidder.model.openrtb.BidRequest;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -167,6 +170,18 @@ class BidEngineTest {
   void stopsBiddingWhenLineItemBudgetIsSpent() {
     LineItemStore lineItemStore = new LineItemStore();
     lineItemStore.create("Banner Test", MediaType.BANNER, true, 1.25d, 2.50d, LineItemTargeting.none());
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
+    BidRequest request = bannerRequest("request-1", 1.00d);
+
+    assertNotNull(engine.evaluate(request));
+    assertNotNull(engine.evaluate(request));
+    assertNull(engine.evaluate(request));
+  }
+
+  @Test
+  void stopsBiddingWhenLineItemDailyBudgetCapIsSpent() {
+    LineItemStore lineItemStore = new LineItemStore(Clock.fixed(Instant.parse("2026-04-19T12:00:00Z"), ZoneOffset.UTC));
+    lineItemStore.create("Banner Test", MediaType.BANNER, true, null, null, 1.25d, 10.00d, 2.50d, LineItemTargeting.none());
     BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
     BidRequest request = bannerRequest("request-1", 1.00d);
 

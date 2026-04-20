@@ -30,6 +30,12 @@ public final class LineItemStore {
     this.clock = Clock.systemDefaultZone();
   }
 
+  public LineItemStore(Clock clock) {
+    this.storagePath = null;
+    this.mapper = null;
+    this.clock = clock;
+  }
+
   public LineItemStore(Path storagePath, ObjectMapper mapper) throws IOException {
     this(storagePath, mapper, Clock.systemDefaultZone());
   }
@@ -42,7 +48,19 @@ public final class LineItemStore {
   }
 
   public synchronized LineItem create(String name, MediaType mediaType, boolean active, double bidCpm, double budget, LineItemTargeting targeting) {
-    return create(name, mediaType, active, null, null, bidCpm, budget, targeting);
+    return create(name, mediaType, active, null, null, bidCpm, budget, null, targeting);
+  }
+
+  public synchronized LineItem create(
+      String name,
+      MediaType mediaType,
+      boolean active,
+      double bidCpm,
+      double budget,
+      Double dailyBudget,
+      LineItemTargeting targeting
+  ) {
+    return create(name, mediaType, active, null, null, bidCpm, budget, dailyBudget, targeting);
   }
 
   public synchronized LineItem create(
@@ -53,6 +71,20 @@ public final class LineItemStore {
       String endDate,
       double bidCpm,
       double budget,
+      LineItemTargeting targeting
+  ) {
+    return create(name, mediaType, active, startDate, endDate, bidCpm, budget, null, targeting);
+  }
+
+  public synchronized LineItem create(
+      String name,
+      MediaType mediaType,
+      boolean active,
+      String startDate,
+      String endDate,
+      double bidCpm,
+      double budget,
+      Double dailyBudget,
       LineItemTargeting targeting
   ) {
     String normalizedName = name == null ? "" : name.trim();
@@ -67,6 +99,9 @@ public final class LineItemStore {
     }
     if (!Double.isFinite(budget) || budget <= 0.0d) {
       throw new IllegalArgumentException("budget must be greater than 0");
+    }
+    if (dailyBudget != null && (!Double.isFinite(dailyBudget) || dailyBudget <= 0.0d)) {
+      throw new IllegalArgumentException("dailyBudget must be greater than 0");
     }
     LocalDate parsedStartDate = parseDate(startDate, "startDate");
     LocalDate parsedEndDate = parseDate(endDate, "endDate");
@@ -84,15 +119,18 @@ public final class LineItemStore {
         bidCpm,
         budget,
         0.0d,
+        dailyBudget,
+        0.0d,
+        LocalDate.now(clock).toString(),
         targeting == null ? LineItemTargeting.none() : targeting
-    ));
+    ), LocalDate.now(clock));
     lineItems.put(lineItem.id(), lineItem);
     persist();
     return lineItem;
   }
 
   public List<LineItem> list() {
-    refreshExpiredLineItems();
+    refreshLineItemsForToday(LocalDate.now(clock));
     return lineItems.values().stream()
         .sorted(Comparator.comparing(LineItem::name).thenComparing(LineItem::id))
         .toList();
@@ -113,10 +151,11 @@ public final class LineItemStore {
     if (maxBids <= 0) {
       return List.of();
     }
-    refreshExpiredLineItems();
+    LocalDate today = LocalDate.now(clock);
+    refreshLineItemsForToday(today);
 
     List<LineItem> selected = new ArrayList<>(lineItems.values()).stream()
-        .filter(lineItem -> lineItem.isServingOn(LocalDate.now(clock)))
+        .filter(lineItem -> lineItem.isServingOn(today))
         .filter(lineItem -> lineItem.mediaType() == mediaType)
         .filter(lineItem -> lineItem.bidCpm() + 1e-9 >= floorCpm)
         .filter(lineItem -> lineItem.canAfford(lineItem.bidCpm()))
@@ -131,7 +170,7 @@ public final class LineItemStore {
 
     List<LineItem> reserved = new ArrayList<>(selected.size());
     for (LineItem lineItem : selected) {
-      LineItem updated = lineItem.spend(lineItem.bidCpm());
+      LineItem updated = lineItem.spend(lineItem.bidCpm(), today);
       lineItems.put(updated.id(), updated);
       reserved.add(updated);
     }
@@ -152,16 +191,16 @@ public final class LineItemStore {
 
     for (LineItem lineItem : storedLineItems.lineItems()) {
       if (lineItem != null && lineItem.id() != null && !lineItem.id().isBlank()) {
-        lineItems.put(lineItem.id(), normalizeLineItemState(lineItem));
+        lineItems.put(lineItem.id(), normalizeLineItemState(lineItem, LocalDate.now(clock)));
       }
     }
-    refreshExpiredLineItems();
+    refreshLineItemsForToday(LocalDate.now(clock));
   }
 
-  private void refreshExpiredLineItems() {
+  private void refreshLineItemsForToday(LocalDate today) {
     boolean changed = false;
     for (LineItem lineItem : new ArrayList<>(lineItems.values())) {
-      LineItem normalized = normalizeLineItemState(lineItem);
+      LineItem normalized = normalizeLineItemState(lineItem, today);
       if (!normalized.equals(lineItem)) {
         lineItems.put(normalized.id(), normalized);
         changed = true;
@@ -172,14 +211,15 @@ public final class LineItemStore {
     }
   }
 
-  private LineItem normalizeLineItemState(LineItem lineItem) {
+  private LineItem normalizeLineItemState(LineItem lineItem, LocalDate today) {
     if (lineItem == null) {
       return null;
     }
-    if (lineItem.active() && lineItem.hasEnded(LocalDate.now(clock))) {
-      return lineItem.inactive();
+    LineItem normalized = lineItem.normalizedForDate(today);
+    if (normalized.active() && normalized.hasEnded(today)) {
+      return normalized.inactive();
     }
-    return lineItem;
+    return normalized;
   }
 
   private LocalDate parseDate(String value, String fieldName) {

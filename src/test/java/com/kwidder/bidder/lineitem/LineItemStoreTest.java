@@ -30,6 +30,7 @@ class LineItemStoreTest {
         "2026-04-30",
         1.25d,
         5.00d,
+        2.00d,
         new LineItemTargeting(
             List.of(2),
             List.of("USA"),
@@ -56,8 +57,12 @@ class LineItemStoreTest {
     assertEquals("2026-04-30", reloaded.endDate());
     assertEquals(1.25d, reloaded.bidCpm());
     assertEquals(5.00d, reloaded.budget());
+    assertEquals(2.00d, reloaded.dailyBudget());
     assertEquals(1.25d, reloaded.spent());
     assertEquals(3.75d, reloaded.remainingBudget());
+    assertEquals(1.25d, reloaded.dailySpent());
+    assertEquals("2026-04-19", reloaded.dailySpentDate());
+    assertEquals(0.75d, reloaded.remainingDailyBudget());
     assertEquals(List.of(2), reloaded.targeting().deviceTypes());
     assertEquals(List.of("USA"), reloaded.targeting().countries());
     assertEquals(List.of("ca"), reloaded.targeting().regions());
@@ -81,5 +86,38 @@ class LineItemStoreTest {
     LineItem reloaded = store.list().get(0);
 
     assertEquals(false, reloaded.active());
+  }
+
+  @Test
+  void stopsReservingBidsWhenDailyBudgetCapIsReached() {
+    Clock fixedClock = Clock.fixed(Instant.parse("2026-04-19T12:00:00Z"), ZoneOffset.UTC);
+    LineItemStore store = new LineItemStore(fixedClock);
+    store.create("Daily Capped Banner", MediaType.BANNER, true, 1.25d, 10.00d, 2.50d, LineItemTargeting.none());
+
+    assertEquals(1, store.reserveBids(MediaType.BANNER, 1.00d, 1, lineItem -> true).size());
+    assertEquals(1, store.reserveBids(MediaType.BANNER, 1.00d, 1, lineItem -> true).size());
+    assertEquals(0, store.reserveBids(MediaType.BANNER, 1.00d, 1, lineItem -> true).size());
+    assertEquals(2.50d, store.list().get(0).dailySpent());
+  }
+
+  @Test
+  void resetsDailySpendWhenCalendarDayChanges() throws Exception {
+    Path storagePath = tempDir.resolve("daily-reset-line-items.json");
+    Clock dayOneClock = Clock.fixed(Instant.parse("2026-04-19T12:00:00Z"), ZoneOffset.UTC);
+    Clock dayTwoClock = Clock.fixed(Instant.parse("2026-04-20T12:00:00Z"), ZoneOffset.UTC);
+
+    LineItemStore dayOneStore = new LineItemStore(storagePath, JsonSupport.mapper(), dayOneClock);
+    dayOneStore.create("Daily Reset Banner", MediaType.BANNER, true, 1.25d, 10.00d, 2.50d, LineItemTargeting.none());
+    dayOneStore.reserveBids(MediaType.BANNER, 1.00d, 1, lineItem -> true);
+    dayOneStore.reserveBids(MediaType.BANNER, 1.00d, 1, lineItem -> true);
+
+    LineItemStore dayTwoStore = new LineItemStore(storagePath, JsonSupport.mapper(), dayTwoClock);
+    LineItem reloaded = dayTwoStore.list().get(0);
+
+    assertEquals(2.50d, reloaded.spent());
+    assertEquals(0.0d, reloaded.dailySpent());
+    assertEquals("2026-04-20", reloaded.dailySpentDate());
+    assertEquals(2.50d, reloaded.remainingDailyBudget());
+    assertEquals(1, dayTwoStore.reserveBids(MediaType.BANNER, 1.00d, 1, lineItem -> true).size());
   }
 }
