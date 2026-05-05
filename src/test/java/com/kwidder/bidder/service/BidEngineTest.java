@@ -191,6 +191,24 @@ class BidEngineTest {
   }
 
   @Test
+  void stopsBiddingWhenLineItemFrequencyCapIsReached() throws Exception {
+    LineItemStore lineItemStore = new LineItemStore();
+    lineItemStore.create("Frequency Capped Banner", MediaType.BANNER, true, 1.25d, 10.00d, null, 2, LineItemTargeting.none());
+    BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
+    BidRequest request = JsonSupport.mapper().readValue("""
+        {
+          "id": "request-frequency-cap",
+          "imp": [{"id": "imp-1", "bidfloor": 1.0, "banner": {"w": 300, "h": 250}}],
+          "user": {"id": "user-123"}
+        }
+        """, BidRequest.class);
+
+    assertNotNull(engine.evaluate(request));
+    assertNotNull(engine.evaluate(request));
+    assertNull(engine.evaluate(request));
+  }
+
+  @Test
   void returnsMultipleBannerBidsSortedByPriceWhenRequestAllowsIt() throws Exception {
     LineItemStore lineItemStore = new LineItemStore();
     lineItemStore.create("Banner High", MediaType.BANNER, true, 2.25d, 10.00d, LineItemTargeting.none());
@@ -529,7 +547,7 @@ class BidEngineTest {
   @Test
   void returnsNoBidWhenLineItemStartDateIsInTheFuture() {
     LineItemStore lineItemStore = new LineItemStore();
-    lineItemStore.create("Future Banner", MediaType.BANNER, true, "2026-04-20", null, 1.25d, 10.00d, LineItemTargeting.none());
+    lineItemStore.create("Future Banner", MediaType.BANNER, true, "2099-04-20", null, 1.25d, 10.00d, LineItemTargeting.none());
     BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
 
     assertNull(engine.evaluate(bannerRequest("request-future-1", 1.00d)));

@@ -48,6 +48,7 @@ public final class LineItemHandler implements HttpHandler {
     double bidCpm = request.bidCpm() == null ? 0.0d : request.bidCpm();
     double budget = request.budget() == null ? 0.0d : request.budget();
     Double dailyBudget = request.dailyBudget();
+    Integer frequencyCap = request.frequencyCap();
     LineItemTargeting targeting = request.targeting() == null ? LineItemTargeting.none() : request.targeting();
     LineItem lineItem = lineItemStore.create(
         request.name(),
@@ -58,6 +59,7 @@ public final class LineItemHandler implements HttpHandler {
         bidCpm,
         budget,
         dailyBudget,
+        frequencyCap,
         targeting
     );
     HttpResponses.writeJson(exchange, 201, lineItem, mapper);

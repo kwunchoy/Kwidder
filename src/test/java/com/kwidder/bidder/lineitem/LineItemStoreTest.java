@@ -31,6 +31,7 @@ class LineItemStoreTest {
         1.25d,
         5.00d,
         2.00d,
+        3,
         new LineItemTargeting(
             List.of(2),
             List.of("USA"),
@@ -44,7 +45,7 @@ class LineItemStoreTest {
             List.of("deal-123")
         )
     );
-    firstStore.reserveBids(MediaType.BANNER, 1.00d, 1, lineItem -> true);
+    firstStore.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-123", lineItem -> true);
 
     LineItemStore secondStore = new LineItemStore(storagePath, JsonSupport.mapper(), fixedClock);
 
@@ -63,6 +64,8 @@ class LineItemStoreTest {
     assertEquals(1.25d, reloaded.dailySpent());
     assertEquals("2026-04-19", reloaded.dailySpentDate());
     assertEquals(0.75d, reloaded.remainingDailyBudget());
+    assertEquals(3, reloaded.frequencyCap());
+    assertEquals(1, reloaded.frequencyCountFor("user.id:user-123"));
     assertEquals(List.of(2), reloaded.targeting().deviceTypes());
     assertEquals(List.of("USA"), reloaded.targeting().countries());
     assertEquals(List.of("ca"), reloaded.targeting().regions());
@@ -119,5 +122,17 @@ class LineItemStoreTest {
     assertEquals("2026-04-20", reloaded.dailySpentDate());
     assertEquals(2.50d, reloaded.remainingDailyBudget());
     assertEquals(1, dayTwoStore.reserveBids(MediaType.BANNER, 1.00d, 1, lineItem -> true).size());
+  }
+
+  @Test
+  void stopsReservingBidsWhenFrequencyCapIsReachedForIdentity() {
+    LineItemStore store = new LineItemStore();
+    store.create("Frequency Capped Banner", MediaType.BANNER, true, 1.25d, 10.00d, null, 2, LineItemTargeting.none());
+
+    assertEquals(1, store.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-123", lineItem -> true).size());
+    assertEquals(1, store.reserveBids(MediaType.BANNER, 1.00d, 1, "USER.ID:USER-123", lineItem -> true).size());
+    assertEquals(0, store.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-123", lineItem -> true).size());
+    assertEquals(1, store.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-456", lineItem -> true).size());
+    assertEquals(2, store.list().get(0).frequencyCountFor("user.id:user-123"));
   }
 }

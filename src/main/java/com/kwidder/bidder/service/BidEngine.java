@@ -85,6 +85,7 @@ public final class BidEngine {
         MediaType.BANNER,
         floor,
         request.maxBidsPerImp(),
+        frequencyKey(request),
         lineItem -> matchesTargeting(lineItem, request)
     );
     if (lineItems.isEmpty()) {
@@ -124,6 +125,7 @@ public final class BidEngine {
         MediaType.VIDEO,
         floor,
         request.maxBidsPerImp(),
+        frequencyKey(request),
         lineItem -> matchesTargeting(lineItem, request)
     );
     if (lineItems.isEmpty()) {
@@ -182,6 +184,70 @@ public final class BidEngine {
         && matchesInventoryTargeting(targeting, request)
         && matchesDealId(targeting, eligibleDeal)
         && matchesGeo(targeting, request);
+  }
+
+  private String frequencyKey(BidRequest request) {
+    if (request == null) {
+      return null;
+    }
+    if (request.user() != null) {
+      String userId = nonBlank(request.user().id());
+      if (userId != null) {
+        return "user.id:" + userId;
+      }
+      String buyerUid = nonBlank(request.user().buyeruid());
+      if (buyerUid != null) {
+        return "buyeruid:" + buyerUid;
+      }
+      String eid = eidFrequencyKey(request.user().eids());
+      if (eid != null) {
+        return eid;
+      }
+    }
+    if (request.device() != null) {
+      String ifa = nonBlank(request.device().ifa());
+      if (ifa != null) {
+        return "device.ifa:" + ifa;
+      }
+      String ip = nonBlank(request.device().ip());
+      if (ip != null) {
+        return "device.ip:" + ip;
+      }
+      String ipv6 = nonBlank(request.device().ipv6());
+      if (ipv6 != null) {
+        return "device.ipv6:" + ipv6;
+      }
+    }
+    return null;
+  }
+
+  private String eidFrequencyKey(List<BidRequest.Eid> eids) {
+    if (eids == null) {
+      return null;
+    }
+    for (BidRequest.Eid eid : eids) {
+      if (eid == null || eid.uids() == null) {
+        continue;
+      }
+      String source = nonBlank(eid.source());
+      for (BidRequest.Uid uid : eid.uids()) {
+        if (uid == null) {
+          continue;
+        }
+        String id = nonBlank(uid.id());
+        if (id != null) {
+          return "eid:" + (source == null ? "unknown" : source) + ":" + id;
+        }
+      }
+    }
+    return null;
+  }
+
+  private String nonBlank(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    return value.trim();
   }
 
   private boolean matchesDeviceType(LineItemTargeting targeting, BidRequest.Device device) {

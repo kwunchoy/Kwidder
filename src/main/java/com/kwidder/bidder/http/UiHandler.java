@@ -327,6 +327,10 @@ public final class UiHandler implements HttpHandler {
                       <input id="line-item-daily-budget" type="number" min="0.01" step="0.01" placeholder="Optional">
                     </label>
                     <label>
+                      Frequency Cap
+                      <input id="line-item-frequency-cap" type="number" min="1" step="1" placeholder="Optional">
+                    </label>
+                    <label>
                       Start Date
                       <input id="line-item-start-date" type="date">
                     </label>
@@ -423,7 +427,7 @@ public final class UiHandler implements HttpHandler {
           </section>
 
           <div class="foot">
-            Kwidder will only bid when a matching active line item is within its flight dates, has enough remaining total and daily budget, clears the request floor, and matches any device, OS, browser, geo, domain, app, or deal targeting filters you set.
+            Kwidder will only bid when a matching active line item is within its flight dates, has enough remaining total and daily budget, is under its frequency cap, clears the request floor, and matches any device, OS, browser, geo, domain, app, or deal targeting filters you set.
           </div>
         </div>
 
@@ -548,6 +552,7 @@ public final class UiHandler implements HttpHandler {
           const lineItemBidCpm = document.getElementById("line-item-bid-cpm");
           const lineItemBudget = document.getElementById("line-item-budget");
           const lineItemDailyBudget = document.getElementById("line-item-daily-budget");
+          const lineItemFrequencyCap = document.getElementById("line-item-frequency-cap");
           const lineItemStartDate = document.getElementById("line-item-start-date");
           const lineItemEndDate = document.getElementById("line-item-end-date");
           const lineItemActive = document.getElementById("line-item-active");
@@ -650,6 +655,7 @@ public final class UiHandler implements HttpHandler {
                 <div>Bid CPM: <strong>$${formatMoney(lineItem.bidCpm)}</strong></div>
                 <div>Budget: $${formatMoney(lineItem.budget)} | Spent: $${formatMoney(lineItem.spent)} | Remaining: $${formatMoney(lineItem.remainingBudget)}</div>
                 <div>Daily Cap: ${lineItem.dailyBudget == null ? "Unlimited" : `$${formatMoney(lineItem.dailyBudget)}`} | Daily Spent: $${formatMoney(lineItem.dailySpent)} | Daily Remaining: ${lineItem.remainingDailyBudget == null ? "Unlimited" : `$${formatMoney(lineItem.remainingDailyBudget)}`}</div>
+                <div>Frequency Cap: ${lineItem.frequencyCap == null ? "Unlimited" : `${lineItem.frequencyCap} per identity`} | Identities Seen: ${Object.keys(lineItem.frequencyCounts ?? {}).length}</div>
                 <div>Flight: ${lineItem.startDate ?? "No start"} -> ${lineItem.endDate ?? "No end"}</div>
                 <div>Targeting: ${targetingSummary(lineItem.targeting)}</div>
                 <div><code>${lineItem.id}</code></div>
@@ -675,6 +681,7 @@ public final class UiHandler implements HttpHandler {
               bidCpm: Number(lineItemBidCpm.value),
               budget: Number(lineItemBudget.value),
               dailyBudget: lineItemDailyBudget.value ? Number(lineItemDailyBudget.value) : null,
+              frequencyCap: lineItemFrequencyCap.value ? Number(lineItemFrequencyCap.value) : null,
               targeting: {
                 deviceTypes: deviceTypeOptions.filter(option => option.checked).map(option => Number(option.value)),
                 countries: parseCsv(lineItemCountries.value),

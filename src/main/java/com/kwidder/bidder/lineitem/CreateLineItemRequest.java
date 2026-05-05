@@ -9,6 +9,7 @@ public record CreateLineItemRequest(
     Double bidCpm,
     Double budget,
     Double dailyBudget,
+    Integer frequencyCap,
     LineItemTargeting targeting
 ) {
 }

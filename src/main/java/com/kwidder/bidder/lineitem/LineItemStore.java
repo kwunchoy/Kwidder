@@ -48,7 +48,7 @@ public final class LineItemStore {
   }
 
   public synchronized LineItem create(String name, MediaType mediaType, boolean active, double bidCpm, double budget, LineItemTargeting targeting) {
-    return create(name, mediaType, active, null, null, bidCpm, budget, null, targeting);
+    return create(name, mediaType, active, null, null, bidCpm, budget, null, null, targeting);
   }
 
   public synchronized LineItem create(
@@ -60,7 +60,20 @@ public final class LineItemStore {
       Double dailyBudget,
       LineItemTargeting targeting
   ) {
-    return create(name, mediaType, active, null, null, bidCpm, budget, dailyBudget, targeting);
+    return create(name, mediaType, active, null, null, bidCpm, budget, dailyBudget, null, targeting);
+  }
+
+  public synchronized LineItem create(
+      String name,
+      MediaType mediaType,
+      boolean active,
+      double bidCpm,
+      double budget,
+      Double dailyBudget,
+      Integer frequencyCap,
+      LineItemTargeting targeting
+  ) {
+    return create(name, mediaType, active, null, null, bidCpm, budget, dailyBudget, frequencyCap, targeting);
   }
 
   public synchronized LineItem create(
@@ -73,7 +86,7 @@ public final class LineItemStore {
       double budget,
       LineItemTargeting targeting
   ) {
-    return create(name, mediaType, active, startDate, endDate, bidCpm, budget, null, targeting);
+    return create(name, mediaType, active, startDate, endDate, bidCpm, budget, null, null, targeting);
   }
 
   public synchronized LineItem create(
@@ -85,6 +98,21 @@ public final class LineItemStore {
       double bidCpm,
       double budget,
       Double dailyBudget,
+      LineItemTargeting targeting
+  ) {
+    return create(name, mediaType, active, startDate, endDate, bidCpm, budget, dailyBudget, null, targeting);
+  }
+
+  public synchronized LineItem create(
+      String name,
+      MediaType mediaType,
+      boolean active,
+      String startDate,
+      String endDate,
+      double bidCpm,
+      double budget,
+      Double dailyBudget,
+      Integer frequencyCap,
       LineItemTargeting targeting
   ) {
     String normalizedName = name == null ? "" : name.trim();
@@ -102,6 +130,9 @@ public final class LineItemStore {
     }
     if (dailyBudget != null && (!Double.isFinite(dailyBudget) || dailyBudget <= 0.0d)) {
       throw new IllegalArgumentException("dailyBudget must be greater than 0");
+    }
+    if (frequencyCap != null && frequencyCap <= 0) {
+      throw new IllegalArgumentException("frequencyCap must be greater than 0");
     }
     LocalDate parsedStartDate = parseDate(startDate, "startDate");
     LocalDate parsedEndDate = parseDate(endDate, "endDate");
@@ -122,6 +153,8 @@ public final class LineItemStore {
         dailyBudget,
         0.0d,
         LocalDate.now(clock).toString(),
+        frequencyCap,
+        null,
         targeting == null ? LineItemTargeting.none() : targeting
     ), LocalDate.now(clock));
     lineItems.put(lineItem.id(), lineItem);
@@ -148,6 +181,10 @@ public final class LineItemStore {
   }
 
   public synchronized List<LineItem> reserveBids(MediaType mediaType, double floorCpm, int maxBids, Predicate<LineItem> matcher) {
+    return reserveBids(mediaType, floorCpm, maxBids, null, matcher);
+  }
+
+  public synchronized List<LineItem> reserveBids(MediaType mediaType, double floorCpm, int maxBids, String frequencyKey, Predicate<LineItem> matcher) {
     if (maxBids <= 0) {
       return List.of();
     }
@@ -159,6 +196,7 @@ public final class LineItemStore {
         .filter(lineItem -> lineItem.mediaType() == mediaType)
         .filter(lineItem -> lineItem.bidCpm() + 1e-9 >= floorCpm)
         .filter(lineItem -> lineItem.canAfford(lineItem.bidCpm()))
+        .filter(lineItem -> lineItem.canServeTo(frequencyKey))
         .filter(lineItem -> matcher == null || matcher.test(lineItem))
         .sorted(Comparator.comparing(LineItem::bidCpm).reversed().thenComparing(LineItem::name).thenComparing(LineItem::id))
         .limit(maxBids)
@@ -170,7 +208,7 @@ public final class LineItemStore {
 
     List<LineItem> reserved = new ArrayList<>(selected.size());
     for (LineItem lineItem : selected) {
-      LineItem updated = lineItem.spend(lineItem.bidCpm(), today);
+      LineItem updated = lineItem.spend(lineItem.bidCpm(), today, frequencyKey);
       lineItems.put(updated.id(), updated);
       reserved.add(updated);
     }
