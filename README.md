@@ -31,9 +31,9 @@ The first implementation is intentionally conservative so we have something pred
 
 - Banner and video impressions are supported today
 - Kwidder only bids when an active line item matches the request media type
-- Each line item sets its own bid CPM, total budget, optional daily budget cap, and optional frequency cap
+- Each line item sets its own bid CPM, total budget, optional daily budget cap, and optional per-user frequency caps for day, week, and month windows
 - Each line item can optionally set start and end dates
-- Kwidder spends line item budget on every bid response it returns, stops bidding once that budget is exhausted, and also enforces any configured daily or frequency cap
+- Kwidder spends line item budget on every bid response it returns, stops bidding once that budget is exhausted, and enforces every configured budget and frequency cap
 - If an active line item's end date is in the past, Kwidder automatically turns it inactive
 - Line items, budgets, spent amounts, and frequency counts persist across Kwidder restarts in a local JSON store
 - Line items can target device types, operating systems, browser families, exact-match geo filters for country, region, city, and ZIP, plus site domains, app bundles, and deal IDs
@@ -56,7 +56,9 @@ mvn exec:java
 The service reads configuration from environment variables. A starter `.env.example` is included.
 By default, line items are stored in `data/line-items.json`. You can change that with `KWIDDER_LINE_ITEM_STORE_PATH`.
 
-Then open `http://localhost:8080/ui` to create line items with media type, bid CPM, total budget, optional daily budget cap, optional frequency cap, start and end dates, device type targeting, operating system targeting, browser family targeting, geo targeting, domain targeting, app bundle targeting, and deal ID targeting, paste a bid request, and inspect Kwidder's response in the browser.
+Then open `http://localhost:8080/ui` to create line items with media type, bid CPM, total budget, optional daily budget cap, multiple day/week/month frequency caps, start and end dates, device type targeting, operating system targeting, browser family targeting, geo targeting, domain targeting, app bundle targeting, and deal ID targeting, paste a bid request, and inspect Kwidder's response in the browser.
+
+Frequency caps use calendar windows in Kwidder's local timezone. Daily caps reset at midnight, weekly caps use ISO weeks that start on Monday, and monthly caps reset on the first day of the month. A line item can configure one cap for each window, such as 2 bids per day, 5 per week, and 10 per month. All configured caps must allow the bid.
 
 To let one impression return multiple bids, include this request extension:
 

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.kwidder.bidder.http.JsonSupport;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -134,5 +135,99 @@ class LineItemStoreTest {
     assertEquals(0, store.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-123", lineItem -> true).size());
     assertEquals(1, store.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-456", lineItem -> true).size());
     assertEquals(2, store.list().get(0).frequencyCountFor("user.id:user-123"));
+  }
+
+  @Test
+  void resetsDailyFrequencyCapAtMidnight() throws Exception {
+    Path storagePath = tempDir.resolve("daily-frequency-cap.json");
+    Clock dayOne = Clock.fixed(Instant.parse("2026-07-20T12:00:00Z"), ZoneOffset.UTC);
+    Clock dayTwo = Clock.fixed(Instant.parse("2026-07-21T12:00:00Z"), ZoneOffset.UTC);
+
+    LineItemStore firstStore = new LineItemStore(storagePath, JsonSupport.mapper(), dayOne);
+    firstStore.create(
+        "Daily Frequency Banner",
+        MediaType.BANNER,
+        true,
+        null,
+        null,
+        1.25d,
+        100.00d,
+        null,
+        null,
+        List.of(new FrequencyCap(FrequencyCapPeriod.DAY, 2)),
+        LineItemTargeting.none()
+    );
+
+    assertEquals(1, firstStore.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-123", lineItem -> true).size());
+    assertEquals(1, firstStore.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-123", lineItem -> true).size());
+    assertEquals(0, firstStore.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-123", lineItem -> true).size());
+
+    LineItemStore secondStore = new LineItemStore(storagePath, JsonSupport.mapper(), dayTwo);
+    LineItem reloaded = secondStore.list().get(0);
+
+    assertEquals(0, reloaded.frequencyCountFor(FrequencyCapPeriod.DAY, "user.id:user-123", LocalDate.of(2026, 7, 21)));
+    assertEquals(1, secondStore.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-123", lineItem -> true).size());
+  }
+
+  @Test
+  void resetsWeeklyFrequencyCapOnMonday() throws Exception {
+    Path storagePath = tempDir.resolve("weekly-frequency-cap.json");
+    Clock monday = Clock.fixed(Instant.parse("2026-07-20T12:00:00Z"), ZoneOffset.UTC);
+    Clock sunday = Clock.fixed(Instant.parse("2026-07-26T12:00:00Z"), ZoneOffset.UTC);
+    Clock nextMonday = Clock.fixed(Instant.parse("2026-07-27T12:00:00Z"), ZoneOffset.UTC);
+
+    LineItemStore firstStore = new LineItemStore(storagePath, JsonSupport.mapper(), monday);
+    firstStore.create(
+        "Weekly Frequency Banner",
+        MediaType.BANNER,
+        true,
+        null,
+        null,
+        1.25d,
+        100.00d,
+        null,
+        null,
+        List.of(new FrequencyCap(FrequencyCapPeriod.WEEK, 2)),
+        LineItemTargeting.none()
+    );
+    firstStore.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-123", lineItem -> true);
+    firstStore.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-123", lineItem -> true);
+
+    LineItemStore sundayStore = new LineItemStore(storagePath, JsonSupport.mapper(), sunday);
+    assertEquals(0, sundayStore.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-123", lineItem -> true).size());
+
+    LineItemStore mondayStore = new LineItemStore(storagePath, JsonSupport.mapper(), nextMonday);
+    assertEquals(1, mondayStore.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-123", lineItem -> true).size());
+  }
+
+  @Test
+  void resetsMonthlyFrequencyCapOnFirstDayOfMonth() throws Exception {
+    Path storagePath = tempDir.resolve("monthly-frequency-cap.json");
+    Clock july = Clock.fixed(Instant.parse("2026-07-02T12:00:00Z"), ZoneOffset.UTC);
+    Clock endOfJuly = Clock.fixed(Instant.parse("2026-07-31T12:00:00Z"), ZoneOffset.UTC);
+    Clock august = Clock.fixed(Instant.parse("2026-08-01T12:00:00Z"), ZoneOffset.UTC);
+
+    LineItemStore firstStore = new LineItemStore(storagePath, JsonSupport.mapper(), july);
+    firstStore.create(
+        "Monthly Frequency Banner",
+        MediaType.BANNER,
+        true,
+        null,
+        null,
+        1.25d,
+        100.00d,
+        null,
+        null,
+        List.of(new FrequencyCap(FrequencyCapPeriod.MONTH, 2)),
+        LineItemTargeting.none()
+    );
+    firstStore.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-123", lineItem -> true);
+    firstStore.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-123", lineItem -> true);
+
+    LineItemStore julyStore = new LineItemStore(storagePath, JsonSupport.mapper(), endOfJuly);
+    assertEquals(0, julyStore.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-123", lineItem -> true).size());
+
+    LineItemStore augustStore = new LineItemStore(storagePath, JsonSupport.mapper(), august);
+    assertEquals(1, augustStore.reserveBids(MediaType.BANNER, 1.00d, 1, "user.id:user-123", lineItem -> true).size());
   }
 }

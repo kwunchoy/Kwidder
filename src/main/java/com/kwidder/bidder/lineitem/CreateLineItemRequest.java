@@ -1,5 +1,7 @@
 package com.kwidder.bidder.lineitem;
 
+import java.util.List;
+
 public record CreateLineItemRequest(
     String name,
     String mediaType,
@@ -10,6 +12,7 @@ public record CreateLineItemRequest(
     Double budget,
     Double dailyBudget,
     Integer frequencyCap,
+    List<FrequencyCap> frequencyCaps,
     LineItemTargeting targeting
 ) {
 }

@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.kwidder.bidder.config.AppConfig;
 import com.kwidder.bidder.http.JsonSupport;
+import com.kwidder.bidder.lineitem.FrequencyCap;
+import com.kwidder.bidder.lineitem.FrequencyCapPeriod;
 import com.kwidder.bidder.lineitem.LineItemStore;
 import com.kwidder.bidder.lineitem.LineItemTargeting;
 import com.kwidder.bidder.lineitem.MediaType;
@@ -193,7 +195,19 @@ class BidEngineTest {
   @Test
   void stopsBiddingWhenLineItemFrequencyCapIsReached() throws Exception {
     LineItemStore lineItemStore = new LineItemStore();
-    lineItemStore.create("Frequency Capped Banner", MediaType.BANNER, true, 1.25d, 10.00d, null, 2, LineItemTargeting.none());
+    lineItemStore.create(
+        "Frequency Capped Banner",
+        MediaType.BANNER,
+        true,
+        null,
+        null,
+        1.25d,
+        10.00d,
+        null,
+        null,
+        List.of(new FrequencyCap(FrequencyCapPeriod.DAY, 2)),
+        LineItemTargeting.none()
+    );
     BidEngine engine = new BidEngine(config(4.50d, 30.00d), lineItemStore);
     BidRequest request = JsonSupport.mapper().readValue("""
         {

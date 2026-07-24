@@ -60,6 +60,7 @@ public final class LineItemHandler implements HttpHandler {
         budget,
         dailyBudget,
         frequencyCap,
+        request.frequencyCaps(),
         targeting
     );
     HttpResponses.writeJson(exchange, 201, lineItem, mapper);

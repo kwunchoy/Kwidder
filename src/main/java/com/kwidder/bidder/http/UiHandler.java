@@ -183,9 +183,41 @@ public final class UiHandler implements HttpHandler {
           }
           .row {
             display: grid;
-            grid-template-columns: 1.05fr .8fr .7fr .7fr .8fr .8fr auto;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 12px;
             align-items: end;
+          }
+          .frequency-cap-editor {
+            display: grid;
+            gap: 12px;
+            padding: 14px;
+            border: 1px dashed var(--border);
+            border-radius: 14px;
+            background: rgba(255,255,255,.45);
+          }
+          .frequency-cap-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+          }
+          .frequency-cap-rows {
+            display: grid;
+            gap: 10px;
+          }
+          .frequency-cap-row {
+            display: grid;
+            grid-template-columns: minmax(120px, 1fr) minmax(140px, 1fr) auto;
+            gap: 10px;
+            align-items: end;
+          }
+          .compact {
+            padding: 9px 12px;
+          }
+          button:disabled {
+            cursor: not-allowed;
+            opacity: .5;
+            transform: none;
           }
           .checkbox {
             display: flex;
@@ -267,7 +299,7 @@ public final class UiHandler implements HttpHandler {
             textarea, pre { min-height: 360px; }
             .meta { grid-template-columns: 1fr; }
             .row { grid-template-columns: 1fr; }
-            .device-grid, .field-grid { grid-template-columns: 1fr; }
+            .device-grid, .field-grid, .frequency-cap-row { grid-template-columns: 1fr; }
           }
         </style>
       </head>
@@ -327,10 +359,6 @@ public final class UiHandler implements HttpHandler {
                       <input id="line-item-daily-budget" type="number" min="0.01" step="0.01" placeholder="Optional">
                     </label>
                     <label>
-                      Frequency Cap
-                      <input id="line-item-frequency-cap" type="number" min="1" step="1" placeholder="Optional">
-                    </label>
-                    <label>
                       Start Date
                       <input id="line-item-start-date" type="date">
                     </label>
@@ -344,6 +372,13 @@ public final class UiHandler implements HttpHandler {
                     <input id="line-item-active" type="checkbox" checked>
                     Active
                   </label>
+                  <div class="frequency-cap-editor">
+                    <div class="frequency-cap-head">
+                      <div class="targeting-title">Frequency Caps</div>
+                      <button class="ghost compact" id="add-frequency-cap" type="button">Add Cap</button>
+                    </div>
+                    <div class="frequency-cap-rows" id="frequency-cap-rows"></div>
+                  </div>
                   <div class="targeting">
                     <div class="targeting-title">Targeting</div>
                     <div class="device-grid">
@@ -427,7 +462,7 @@ public final class UiHandler implements HttpHandler {
           </section>
 
           <div class="foot">
-            Kwidder will only bid when a matching active line item is within its flight dates, has enough remaining total and daily budget, is under its frequency cap, clears the request floor, and matches any device, OS, browser, geo, domain, app, or deal targeting filters you set.
+            Kwidder will only bid when a matching active line item is within its flight dates, has enough remaining total and daily budget, is under all frequency caps, clears the request floor, and matches any device, OS, browser, geo, domain, app, or deal targeting filters you set.
           </div>
         </div>
 
@@ -552,7 +587,8 @@ public final class UiHandler implements HttpHandler {
           const lineItemBidCpm = document.getElementById("line-item-bid-cpm");
           const lineItemBudget = document.getElementById("line-item-budget");
           const lineItemDailyBudget = document.getElementById("line-item-daily-budget");
-          const lineItemFrequencyCap = document.getElementById("line-item-frequency-cap");
+          const frequencyCapRows = document.getElementById("frequency-cap-rows");
+          const addFrequencyCapButton = document.getElementById("add-frequency-cap");
           const lineItemStartDate = document.getElementById("line-item-start-date");
           const lineItemEndDate = document.getElementById("line-item-end-date");
           const lineItemActive = document.getElementById("line-item-active");
@@ -576,6 +612,65 @@ public final class UiHandler implements HttpHandler {
               .split(",")
               .map(entry => entry.trim())
               .filter(Boolean);
+          }
+
+          function frequencyCapSummary(lineItem) {
+            const caps = lineItem.frequencyCaps ?? [];
+            const labels = caps.map(cap => `${cap.limit} per ${String(cap.period).toLowerCase()}`);
+            if (lineItem.frequencyCap != null) {
+              labels.push(`${lineItem.frequencyCap} lifetime`);
+            }
+            return labels.length ? labels.join(" | ") : "Unlimited";
+          }
+
+          function updateFrequencyCapControls() {
+            const rows = Array.from(frequencyCapRows.querySelectorAll(".frequency-cap-row"));
+            const selectedPeriods = rows.map(row => row.querySelector("select").value);
+            for (const row of rows) {
+              const select = row.querySelector("select");
+              for (const option of select.options) {
+                option.disabled = option.value !== select.value && selectedPeriods.includes(option.value);
+              }
+            }
+            addFrequencyCapButton.disabled = rows.length >= 3;
+          }
+
+          function addFrequencyCapRow(period, limit = "") {
+            const usedPeriods = Array.from(frequencyCapRows.querySelectorAll("select")).map(select => select.value);
+            const selectedPeriod = period ?? ["DAY", "WEEK", "MONTH"].find(value => !usedPeriods.includes(value));
+            if (!selectedPeriod) {
+              return;
+            }
+
+            const row = document.createElement("div");
+            row.className = "frequency-cap-row";
+            row.innerHTML = `
+              <label>
+                Maximum Bids
+                <input class="frequency-cap-limit" type="number" min="1" step="1" placeholder="Optional" value="${limit}">
+              </label>
+              <label>
+                Period
+                <select class="frequency-cap-period">
+                  <option value="DAY">Day</option>
+                  <option value="WEEK">Week</option>
+                  <option value="MONTH">Month</option>
+                </select>
+              </label>
+              <button class="ghost compact remove-frequency-cap" type="button">Remove</button>
+            `;
+            row.querySelector("select").value = selectedPeriod;
+            frequencyCapRows.appendChild(row);
+            updateFrequencyCapControls();
+          }
+
+          function selectedFrequencyCaps() {
+            return Array.from(frequencyCapRows.querySelectorAll(".frequency-cap-row"))
+              .map(row => ({
+                period: row.querySelector(".frequency-cap-period").value,
+                limit: Number(row.querySelector(".frequency-cap-limit").value)
+              }))
+              .filter(cap => Number.isInteger(cap.limit) && cap.limit > 0);
           }
 
           function targetingSummary(targeting) {
@@ -655,7 +750,7 @@ public final class UiHandler implements HttpHandler {
                 <div>Bid CPM: <strong>$${formatMoney(lineItem.bidCpm)}</strong></div>
                 <div>Budget: $${formatMoney(lineItem.budget)} | Spent: $${formatMoney(lineItem.spent)} | Remaining: $${formatMoney(lineItem.remainingBudget)}</div>
                 <div>Daily Cap: ${lineItem.dailyBudget == null ? "Unlimited" : `$${formatMoney(lineItem.dailyBudget)}`} | Daily Spent: $${formatMoney(lineItem.dailySpent)} | Daily Remaining: ${lineItem.remainingDailyBudget == null ? "Unlimited" : `$${formatMoney(lineItem.remainingDailyBudget)}`}</div>
-                <div>Frequency Cap: ${lineItem.frequencyCap == null ? "Unlimited" : `${lineItem.frequencyCap} per identity`} | Identities Seen: ${Object.keys(lineItem.frequencyCounts ?? {}).length}</div>
+                <div>Frequency Caps: ${frequencyCapSummary(lineItem)}</div>
                 <div>Flight: ${lineItem.startDate ?? "No start"} -> ${lineItem.endDate ?? "No end"}</div>
                 <div>Targeting: ${targetingSummary(lineItem.targeting)}</div>
                 <div><code>${lineItem.id}</code></div>
@@ -681,7 +776,8 @@ public final class UiHandler implements HttpHandler {
               bidCpm: Number(lineItemBidCpm.value),
               budget: Number(lineItemBudget.value),
               dailyBudget: lineItemDailyBudget.value ? Number(lineItemDailyBudget.value) : null,
-              frequencyCap: lineItemFrequencyCap.value ? Number(lineItemFrequencyCap.value) : null,
+              frequencyCap: null,
+              frequencyCaps: selectedFrequencyCaps(),
               targeting: {
                 deviceTypes: deviceTypeOptions.filter(option => option.checked).map(option => Number(option.value)),
                 countries: parseCsv(lineItemCountries.value),
@@ -714,6 +810,8 @@ public final class UiHandler implements HttpHandler {
 
             lineItemForm.reset();
             lineItemActive.checked = true;
+            frequencyCapRows.innerHTML = "";
+            addFrequencyCapRow("DAY");
             deviceTypeOptions.forEach(option => {
               option.checked = false;
             });
@@ -783,6 +881,16 @@ public final class UiHandler implements HttpHandler {
           document.getElementById("format-response").addEventListener("click", formatResponse);
           document.getElementById("refresh-line-items").addEventListener("click", () => void refreshLineItems());
           lineItemForm.addEventListener("submit", event => void createLineItem(event));
+          addFrequencyCapButton.addEventListener("click", () => addFrequencyCapRow());
+          frequencyCapRows.addEventListener("change", updateFrequencyCapControls);
+          frequencyCapRows.addEventListener("click", event => {
+            const button = event.target.closest(".remove-frequency-cap");
+            if (!button) {
+              return;
+            }
+            button.closest(".frequency-cap-row").remove();
+            updateFrequencyCapControls();
+          });
           lineItemsContainer.addEventListener("click", event => {
             const target = event.target;
             if (!(target instanceof HTMLElement)) {
@@ -794,6 +902,7 @@ public final class UiHandler implements HttpHandler {
             }
           });
 
+          addFrequencyCapRow("DAY");
           setRequest(bannerExample);
           void refreshLineItems();
         </script>

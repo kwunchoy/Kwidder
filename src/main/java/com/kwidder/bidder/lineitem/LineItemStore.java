@@ -48,7 +48,7 @@ public final class LineItemStore {
   }
 
   public synchronized LineItem create(String name, MediaType mediaType, boolean active, double bidCpm, double budget, LineItemTargeting targeting) {
-    return create(name, mediaType, active, null, null, bidCpm, budget, null, null, targeting);
+    return create(name, mediaType, active, null, null, bidCpm, budget, null, null, List.of(), targeting);
   }
 
   public synchronized LineItem create(
@@ -60,47 +60,62 @@ public final class LineItemStore {
       Double dailyBudget,
       LineItemTargeting targeting
   ) {
-    return create(name, mediaType, active, null, null, bidCpm, budget, dailyBudget, null, targeting);
+    return create(name, mediaType, active, null, null, bidCpm, budget, dailyBudget, null, List.of(), targeting);
   }
 
   public synchronized LineItem create(
       String name,
       MediaType mediaType,
       boolean active,
+      double bidCpm,
+      double budget,
+      Double dailyBudget,
+      Integer frequencyCap,
+      LineItemTargeting targeting
+  ) {
+    return create(name, mediaType, active, null, null, bidCpm, budget, dailyBudget, frequencyCap, List.of(), targeting);
+  }
+
+  public synchronized LineItem create(
+      String name,
+      MediaType mediaType,
+      boolean active,
+      String startDate,
+      String endDate,
+      double bidCpm,
+      double budget,
+      LineItemTargeting targeting
+  ) {
+    return create(name, mediaType, active, startDate, endDate, bidCpm, budget, null, null, List.of(), targeting);
+  }
+
+  public synchronized LineItem create(
+      String name,
+      MediaType mediaType,
+      boolean active,
+      String startDate,
+      String endDate,
+      double bidCpm,
+      double budget,
+      Double dailyBudget,
+      LineItemTargeting targeting
+  ) {
+    return create(name, mediaType, active, startDate, endDate, bidCpm, budget, dailyBudget, null, List.of(), targeting);
+  }
+
+  public synchronized LineItem create(
+      String name,
+      MediaType mediaType,
+      boolean active,
+      String startDate,
+      String endDate,
       double bidCpm,
       double budget,
       Double dailyBudget,
       Integer frequencyCap,
       LineItemTargeting targeting
   ) {
-    return create(name, mediaType, active, null, null, bidCpm, budget, dailyBudget, frequencyCap, targeting);
-  }
-
-  public synchronized LineItem create(
-      String name,
-      MediaType mediaType,
-      boolean active,
-      String startDate,
-      String endDate,
-      double bidCpm,
-      double budget,
-      LineItemTargeting targeting
-  ) {
-    return create(name, mediaType, active, startDate, endDate, bidCpm, budget, null, null, targeting);
-  }
-
-  public synchronized LineItem create(
-      String name,
-      MediaType mediaType,
-      boolean active,
-      String startDate,
-      String endDate,
-      double bidCpm,
-      double budget,
-      Double dailyBudget,
-      LineItemTargeting targeting
-  ) {
-    return create(name, mediaType, active, startDate, endDate, bidCpm, budget, dailyBudget, null, targeting);
+    return create(name, mediaType, active, startDate, endDate, bidCpm, budget, dailyBudget, frequencyCap, List.of(), targeting);
   }
 
   public synchronized LineItem create(
@@ -113,6 +128,7 @@ public final class LineItemStore {
       double budget,
       Double dailyBudget,
       Integer frequencyCap,
+      List<FrequencyCap> frequencyCaps,
       LineItemTargeting targeting
   ) {
     String normalizedName = name == null ? "" : name.trim();
@@ -134,6 +150,7 @@ public final class LineItemStore {
     if (frequencyCap != null && frequencyCap <= 0) {
       throw new IllegalArgumentException("frequencyCap must be greater than 0");
     }
+    List<FrequencyCap> validatedFrequencyCaps = validateFrequencyCaps(frequencyCaps);
     LocalDate parsedStartDate = parseDate(startDate, "startDate");
     LocalDate parsedEndDate = parseDate(endDate, "endDate");
     if (parsedStartDate != null && parsedEndDate != null && parsedEndDate.isBefore(parsedStartDate)) {
@@ -154,6 +171,8 @@ public final class LineItemStore {
         0.0d,
         LocalDate.now(clock).toString(),
         frequencyCap,
+        null,
+        validatedFrequencyCaps,
         null,
         targeting == null ? LineItemTargeting.none() : targeting
     ), LocalDate.now(clock));
@@ -196,7 +215,7 @@ public final class LineItemStore {
         .filter(lineItem -> lineItem.mediaType() == mediaType)
         .filter(lineItem -> lineItem.bidCpm() + 1e-9 >= floorCpm)
         .filter(lineItem -> lineItem.canAfford(lineItem.bidCpm()))
-        .filter(lineItem -> lineItem.canServeTo(frequencyKey))
+        .filter(lineItem -> lineItem.canServeTo(frequencyKey, today))
         .filter(lineItem -> matcher == null || matcher.test(lineItem))
         .sorted(Comparator.comparing(LineItem::bidCpm).reversed().thenComparing(LineItem::name).thenComparing(LineItem::id))
         .limit(maxBids)
@@ -273,6 +292,26 @@ public final class LineItemStore {
 
   private String normalizedDate(LocalDate value) {
     return value == null ? null : value.toString();
+  }
+
+  private List<FrequencyCap> validateFrequencyCaps(List<FrequencyCap> frequencyCaps) {
+    if (frequencyCaps == null || frequencyCaps.isEmpty()) {
+      return List.of();
+    }
+    List<FrequencyCapPeriod> periods = new ArrayList<>();
+    for (FrequencyCap cap : frequencyCaps) {
+      if (cap == null || cap.period() == null) {
+        throw new IllegalArgumentException("each frequency cap requires a period");
+      }
+      if (cap.limit() <= 0) {
+        throw new IllegalArgumentException("frequency cap limit must be greater than 0");
+      }
+      if (periods.contains(cap.period())) {
+        throw new IllegalArgumentException("only one frequency cap is allowed per period");
+      }
+      periods.add(cap.period());
+    }
+    return List.copyOf(frequencyCaps);
   }
 
   private void persist() {
